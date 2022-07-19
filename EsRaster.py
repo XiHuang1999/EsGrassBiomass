@@ -65,7 +65,7 @@ def SampleRaster(tifList, ptShp, siteName, nirCellNum=1, Scope=''):
     '''
     Using PtShp File to Sample Raster
     :param tifList: 栅格列表
-    :param ptShp: str or DataFrame,点shp文件 or 第一二列是站点代码、年份，第3列是Lon第4列是Lat的DataFrame
+    :param ptShp: str or DataFrame,点shp文件 or 第一、五列是站点代码、年份，第1列是Lon第2列是Lat的DataFrame
     :param siteName: 点字段名称
     :param nirCellNum: 方格大小，取像元附近均值（只能奇数）；默认值为1，为像元本身
     :param Scope: 筛选范围，eg：“>0” or ""
@@ -77,7 +77,7 @@ def SampleRaster(tifList, ptShp, siteName, nirCellNum=1, Scope=''):
     # 存放点“区站号”
     station_list = []
     ptNum = 0
-    if type(ptShp)=='str':
+    if isinstance(ptShp,str):
         # 数据驱动driver的open()方法返回一个数据源对象 0是只读，1是可写
         driver = ogr.GetDriverByName('ESRI Shapefile')
         ds = driver.Open(ptShp, 0)
@@ -108,8 +108,8 @@ def SampleRaster(tifList, ptShp, siteName, nirCellNum=1, Scope=''):
     
     elif isinstance(ptShp, pd.DataFrame):
         station_list = list(ptShp.iloc[:, 0])
-        xValues = list(ptShp.iloc[:, 2])
-        yValues = list(ptShp.iloc[:, 3])
+        xValues = list(ptShp.iloc[:, 1])
+        yValues = list(ptShp.iloc[:, 2])
         ptNum = len(xValues)
     
     # 创建二维空列表
@@ -135,6 +135,8 @@ def SampleRaster(tifList, ptShp, siteName, nirCellNum=1, Scope=''):
                 break
             else:
                 dt = dr.ReadAsArray(int(x-(nirCellNum-1)/2), int(y-(nirCellNum-1)/2), nirCellNum, nirCellNum)
+            if dt is None:
+                print()
             valueList = dt.flatten()
             # 判断取值范围
             if Scope == '':
