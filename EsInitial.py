@@ -26,8 +26,8 @@ if __name__=="__main__":
         exlFile = excelParas['exlfile'] #excel文件
         staticKey = list(staticParasD.keys()) #静态数据关键字
         staticPath = list(staticParasD.values()) #静态数据文件路径
-        dynamicKey = list(dynamicParasD.keys())  #动态数据关键字数
-        dynamicPath = list(dynamicParasD.values())   #动态数据文件路径
+        # dynamicKey = list(dynamicParasD.keys())  #动态数据关键字数
+        # dynamicPath = list(dynamicParasD.values())   #动态数据文件路径
         exec('dynamicPreduceKey='+dymDayselect['8daysdataname'])    #动态数据中8天数据
         exec('dynamicPreduceDays='+dymDayselect['daysscope'])       #动态数据中选择范围
 
@@ -60,6 +60,77 @@ if __name__=="__main__":
         dynamicKey = [f.split(os.sep)[-1] for f in dynamicPath]
         activeData = [] #dict(zip(activeKey,activePath))
 
+    '''Pre-Process of Dynamic raster'''
+    # 过程文件夹创建
+    for vari in range(len(dynamicPreduceKey)):
+        for seasoni in range(int(len(dynamicPreduceDays)/2)+1):
+            if not os.path.exists(outPath + os.sep + dynamicPreduceKey[vari].upper() + str(seasoni)):
+                os.makedirs(outPath + os.sep + dynamicPreduceKey[vari].upper() + str(seasoni))
+
+    # 预处理数据 产生过程文件
+
+    for yr in range(2000,2020):         # 按年遍历
+        for vari in dynamicPreduceKey:  # 每年的每个变量
+            # 列举tif文件
+            filelist = glob(dynamicParasD[vari] + os.sep + r'*' + vari.upper()+ r'*_' + str(yr) + r'*.tif')
+            filelist.sort()
+            print(yr,end=' ==>> ')
+
+            # 计算8天数据的季节值
+            for seasoni in range(int(len(dynamicPreduceDays)/2)):
+                print(seasoni, end=' ')
+                # 转换闰年天数
+                if yr % 4 != 0:
+                    startDay = dynamicPreduceDays[seasoni * 2]
+                    endDay = dynamicPreduceDays[seasoni * 2 + 1]
+                else:
+                    startDay = dynamicPreduceDays[seasoni * 2] +1
+                    endDay = dynamicPreduceDays[seasoni * 2 + 1] +1
+
+                # 将第i天转换为第j个8天 [upper integer]
+                start8Day = -(-startDay // 8)    # 第16个8天开始 此处的16开始为1 而非0开始
+                end8Day = -(-endDay // 8)  # 第31个8天结束
+                bdays = 8 - startDay % 8 + 1  # 在要处理的8天数据中，第一个8天的天数
+                edays = endDay % 8  # 在要处理的8天数据中，最后一个8天的天数
+
+                # 根据时间范围处理 [8天数据处理]
+                eightDaysFilelist = filelist[start8Day-1:end8Day]
+                if vari.upper() == r'TAVG':
+                    rasterR, proj, geotrans = EsRaster.RasterMean_8Days(eightDaysFilelist,bdays,edays)
+                else:
+                    rasterR, proj, geotrans = EsRaster.RasterSum_8Days(eightDaysFilelist, bdays, edays)
+
+                # 输出过程栅格
+                outRasterFileName = outPath + os.sep + vari.upper() + str(seasoni+1) + os.sep + vari.upper()+r'_'+ str(yr) +r'.tif'
+                EsRaster.write_img(outRasterFileName, proj, geotrans, rasterR)
+                # del rasterR
+                # # 下一次循环变量赋值
+                # start8Day = dynamicPreduceDays[seasoni+1 * 2] // 8   # 第16个8天开始 此处的16开始为1
+                # end8Day = dynamicPreduceDays[seasoni+1 * 2 + 1] // 8  # 第30个8天结束
+
+            # 计算8天数据的年值
+            print(dynamicPreduceKey[vari])
+            # 数据处理
+            if dynamicPreduceKey[vari].upper() == r'TAVG':
+                rasterR, proj, geotrans = EsRaster.RasterMean_8Days(filelist, bdays, edays)
+            else:
+                rasterR, proj, geotrans = EsRaster.RasterSum_8Days(filelist, bdays, edays)
+            # 输出过程栅格
+            outRasterFileName = outPath + os.sep + vari.upper() + r'0' + os.sep + \
+                                vari.upper() + r'_' + str(yr) + r'.tif'
+            EsRaster.write_img(outRasterFileName, proj, geotrans, rasterR)
+    # 并更新数据路径
+    try:
+        for vari in dynamicPreduceKey:
+                dynamicParasD.pop(vari.lower())
+                for seasoni in range(int(len(dynamicPreduceDays)/2)+1):
+                    dynamicParasD.update({vari+str(seasoni): outPath + os.sep + dynamicPreduceKey[vari].upper() + str(seasoni)})
+    except Exception as E_results:
+        print('预处理有异常：', E_results)
+    finally:  # finally的代码是肯定执行的，不管是否有异常,但是finally语块是可选的。
+        print('我不管，预处理错误,你看着办吧!\nPreProcessing File Direction is ERROR！Please Check it！')
+
+
     '''读取站点文件'''
     # sitedf = pd.read_csv(exlFile, header=0)
     # Load CSV files and Delete unstable Data
@@ -80,42 +151,8 @@ if __name__=="__main__":
     # allcsv.to_excel(outPath + os.sep + r'Table\All_yrs_Sites.xlsx', index=False)
     # allcsv.to_csv(outPath + os.sep + r'Table\All_yrs_Sites1.csv', index=False)
 
-    '''Dynamic raster Sample'''
-    # 过程文件夹创建
-    for vari in range(len(dynamicPreduceKey)):
-        for seasoni in range(len(dynamicPreduceDays)/2):
-            if os.path.exists(outPath + os.sep + dynamicPreduceKey[vari].upper() + str(seasoni)):
-                os.makedirs(outPath + os.sep + dynamicPreduceKey[vari].upper() + str(seasoni))
-    # 预处理数据 产生过程文件，并更新数据路径
-    for yr in range(2000,2020):
-        for seasoni in range(len(dynamicPreduceDays)/2):
-            start8Day = dynamicPreduceDays[seasoni * 2] // 8 + 1  # 第16个8天开始 此处的16开始为1
-            end8Day = dynamicPreduceDays[seasoni * 2 + 1] // 8  # 第30个8天结束
 
-            if yr%4 != 0:
-                for vari in range(len(dynamicPreduceKey)):
-                    filelist = glob(dynamicParasD[dynamicPreduceKey[vari]] + os.sep + r'*' + dynamicPreduceKey[vari].upper() + r'*.tif')
-                    filelist.sort()
-                    filelist = filelist[start8Day-1:end8Day]
-
-                    bdays = 8 - dynamicPreduceDays[seasoni * 2] % 8 + 1  # 在要处理的8天数据中，第一个8天的天数
-                    edays = dynamicPreduceDays[seasoni * 2 + 1] % 8  # 在要处理的8天数据中，最后一个8天的天数
-
-                    # 8天数据处理
-                    if dynamicPreduceKey[vari].upper() == r'TAVG':
-                        rasterR,proj,geotrans = RasterMean_8Days(filelist,bdays,edays)
-                    else:
-                        rasterR, proj, geotrans = RasterSum_8Days(filelist, bdays, edays)
-
-                    # 输出过程栅格
-                    outRasterFileName = outPath + os.sep + dynamicPreduceKey[vari].upper() + str(seasoni) + os.sep + dynamicPreduceKey[vari].upper()+r'_'+ str(yr) +r'.tif'
-                    write_img(outRasterFileName, proj, geotrans, rasterR)
-
-                    # 下一次循环变量赋值
-                    start8Day = dynamicPreduceDays[seasoni+1 * 2] // 8   # 第16个8天开始 此处的16开始为1
-                    end8Day = dynamicPreduceDays[seasoni+1 * 2 + 1] // 8  # 第30个8天结束
-
-
+    '''Dynamic raster sample'''
 
 
 

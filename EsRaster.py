@@ -14,7 +14,6 @@ import sys, os, math
 EsRasterPath = os.getcwd()
 sys.path.append(EsRasterPath)      # 添加函数文件位置
 import CoordSys
-import os
 os.environ['PROJ_LIB'] = r'C:\Anaconda\Anaconda\Lib\site-packages\osgeo\data\proj'
 
 def read_img(filename):
@@ -174,7 +173,7 @@ def RasterMean_8Days(DayFileList,beginDays,endDays):
         proj, geotrans, iMean = read_img(DayFileList[-1])
         Mean = Mean + iMean * endDays
         # Mean of range time
-        Mean = Mean / (len(DayFileList)-2+beginDays+endDays)
+        Mean = Mean / ((len(DayFileList)-2)*8+beginDays+endDays)
         return Mean,proj,geotrans
 
 def RasterSum_8Days(DayFileList,beginDays,endDays):
@@ -202,7 +201,7 @@ def RasterSum_8Days(DayFileList,beginDays,endDays):
         iSumRaster /= 8
         SumRaster = SumRaster + iSumRaster * endDays
         # Sum of range time, that is SumRaster
-        return SumRaster
+        return SumRaster,proj,geotrans
 
 def RasterMax(DayFileList):
     '''
