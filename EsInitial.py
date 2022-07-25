@@ -21,7 +21,8 @@ import readConfig
 if __name__=="__main__":
     '''读取参数文件，并初始化参数'''
     if os.path.exists(EsInitialPath+os.sep+"Parameters.ini"):
-        inoutParas,excelParas,staticParas,dynamicParas = readConfig.get_stcAnddym()
+        inou
+        tParas,excelParas,staticParas,dynamicParas = readConfig.get_stcAnddym()
         outPath = inoutParas['out']
         exlFile = excelParas['exlfile']
         staticKey = list(staticParas.keys())
