@@ -70,13 +70,12 @@ def ResampleRaster(tif=r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif'
     scr = rasterio.open(tif)  # 数据属性读取
     # windows = scr.block_windows()
     windows = [win for ji, win in scr.block_windows()] # 获取数据读取窗口
-    arg = zip(windows, [scr] * len(windows))
     p = multiprocessing.Pool(processes=pCount)
-    # t1 = time.time()
-    res = p.map(generate_mulcpu_vars, arg)
+    t1 = time.time()
+    res = p.map(generate_mulcpu_vars, list(zip(windows, [tif] * len(windows))))
     p.close()
     p.join()
-    # print('Time: %.2fs' % (time.time() - t1))
+    print('Time: %.2fs' % (time.time() - t1))
     return res
 
 # def ResampleRaster2(tif=r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif',pCount=5):
@@ -104,7 +103,7 @@ def ResampleRaster(tif=r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif'
 #     resultL[index]=y
 
 def generate_mulcpu_vars(args):
-    return Parallel_Block(*args)
+    return Parallel_Block1(args[0],args[1])
 
 
 def Parallel_Block(wins,scr):
@@ -115,6 +114,17 @@ def Parallel_Block(wins,scr):
     :return:
     '''
     # scr = rasterio.open(tif)      # 数据属性读取
+    # wins,scr = args  # 读入了两个变量，需要计算的wins下标，以及Manager Namespace
+    data = scr.read(window=wins)[0]
+    return data
+def Parallel_Block1(wins,tif):
+    '''
+
+    :param blk:
+    :param windows:
+    :return:
+    '''
+    scr = rasterio.open(tif)      # 数据属性读取
     # wins,scr = args  # 读入了两个变量，需要计算的wins下标，以及Manager Namespace
     data = scr.read(window=wins)[0]
     return data
@@ -133,7 +143,7 @@ def Parallel_Block(wins,scr):
 
 if __name__=="__main__":
 
-    d = ResampleRaster(r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif',1)
+    d = ResampleRaster(r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif',10)
     print()
 
 
