@@ -7,6 +7,9 @@
 # @Software: PyCharm
 from osgeo import osr
 import numpy as np
+import os
+import sys
+os.environ['PROJ_LIB'] = os.path.dirname(sys.argv[0])
 
 def getSRSPair(dataset):
     '''

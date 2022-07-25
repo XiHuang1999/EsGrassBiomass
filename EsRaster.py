@@ -14,6 +14,8 @@ import sys, os, math
 EsRasterPath = os.getcwd()
 sys.path.append(EsRasterPath)      # 添加函数文件位置
 import CoordSys
+import os
+os.environ['PROJ_LIB'] = r'C:\Anaconda\Anaconda\Lib\site-packages\osgeo\data\proj'
 
 def read_img(filename):
     """
@@ -116,7 +118,7 @@ def SampleRaster(tifList, ptShp, siteName, nirCellNum=1, Scope=''):
     values = [[0 for col in range(len(tifList))] for row in range(len(station_list))]
     for tif, tif_i in zip(tifList, range(len(tifList))):
         # Execute ExtractByMask
-        print(tif)
+        print('Sample Raster :',tif)
         # # 打开文件
         dr = gdal.Open(tif)
         # 存储着栅格数据集的地理坐标信息
@@ -148,37 +150,58 @@ def SampleRaster(tifList, ptShp, siteName, nirCellNum=1, Scope=''):
                 print('EsRaster Error！ Shp ID in '+str(i))
     return values
 
-def RasterMean(DayFileList):
+def RasterMean_8Days(DayFileList,beginDays,endDays):
     '''
     将气象数据的8天数据计算均值
-    :param DayFilePath: List,带路径的栅格数据文件名数组
+    :param DayFileList: List,带路径的栅格数据文件名数组
+    :param beginDays: int,第一个8天的天数
+    :param endDays: int,最后的一个8天的天数
+    :param countDays: int,一共有多少个8天
     :return: Dataframe,均值数组
     '''
     if len(DayFileList)<1:
         print(r'Raster List is empty！')
         return 0
     elif len(DayFileList)>=1:
+        # First 8 day data
         proj,geotrans,Mean = read_img(DayFileList[0])
-        for i in range(1,len(DayFileList)):
+        Mean *= beginDays
+        # Data in the middle of the range
+        for i in range(1,len(DayFileList)-1):
             proj,geotrans,iMean = read_img(DayFileList[i])
-            Mean += iMean
-        Mean = Mean / len(DayFileList)
-        return Mean
+            Mean += iMean*8
+        # Last one of 8 day data
+        proj, geotrans, iMean = read_img(DayFileList[-1])
+        Mean = Mean + iMean * endDays
+        # Mean of range time
+        Mean = Mean / (len(DayFileList)-2+beginDays+endDays)
+        return Mean,proj,geotrans
 
-def RasterSum(DayFileList):
+def RasterSum_8Days(DayFileList,beginDays,endDays):
     '''
     将气象数据的8天数据计算求和
     :param DayFilePath: List,带路径的栅格数据文件名数组
+    :param beginDays: int,第一个8天的天数
+    :param endDays: int,最后的一个8天的天数
     :return: Dataframe,求和数组
     '''
     if len(DayFileList)<1:
         print(r'Raster List is empty！')
         return 0
     elif len(DayFileList)>=1:
+        # First 8 day data
         proj,geotrans,SumRaster = read_img(DayFileList[0])
-        for i in range(1,len(DayFileList)):
+        SumRaster /= 8
+        SumRaster *= beginDays
+        # Data in the middle of the range
+        for i in range(1,len(DayFileList)-1):
             proj,geotrans,iSumRaster = read_img(DayFileList[i])
             SumRaster += iSumRaster
+        # Last one of 8 day data
+        proj, geotrans, iSumRaster = read_img(DayFileList[-1])
+        iSumRaster /= 8
+        SumRaster = SumRaster + iSumRaster * endDays
+        # Sum of range time, that is SumRaster
         return SumRaster
 
 def RasterMax(DayFileList):
@@ -213,20 +236,20 @@ def RasterMin(DayFileList):
             MinRaster = iMinRaster[MinRaster > iMinRaster]
         return MinRaster
 
-def RasterCalc(DayFileList, calcKey):
-    '''
-    栅格计算
-    :param DayFileList: List,带路径的栅格数据文件名数组
-    :param calcKey: str,计算类型（包括Mean,Sum,Max,Min）
-    :return:计算后的值
-    '''
-    calcKey = calcKey.capitalize()
-    if calcKey == 'Mean':
-        calcResult = RasterMean(DayFileList)
-    elif calcKey == 'Sum':
-        calcResult = RasterSum(DayFileList)
-    elif calcKey == 'Max':
-        calcResult = RasterMax(DayFileList)
-    elif calcKey == 'Min':
-        calcResult = RasterMin(DayFileList)
-    return calcResult
+# def RasterCalc(DayFileList, calcKey):
+#     '''
+#     栅格计算
+#     :param DayFileList: List,带路径的栅格数据文件名数组
+#     :param calcKey: str,计算类型（包括Mean,Sum,Max,Min）
+#     :return:计算后的值
+#     '''
+#     calcKey = calcKey.capitalize()
+#     if calcKey == 'Mean':
+#         calcResult = RasterMean(DayFileList)
+#     elif calcKey == 'Sum':
+#         calcResult = RasterSum(DayFileList)
+#     elif calcKey == 'Max':
+#         calcResult = RasterMax(DayFileList)
+#     elif calcKey == 'Min':
+#         calcResult = RasterMin(DayFileList)
+#     return calcResult

@@ -56,16 +56,18 @@ def get_stcAnddym():
     print(sections, end='\n')
     # Read para
     exec('inout=[]\nstcParaName=[]\ndymParaValues=[]')
-    inout = configP.items('inout')
-    tbName = configP.items('table')
-    stcParaName = configP.items('static')
-    dymParaName = configP.items('dynamic')
-    inout = dict(inout)
-    excelTb = dict(tbName)
-    stcParaName = dict(stcParaName)
-    dymParaName = dict(dymParaName)
+    inout = dict(configP.items('inout'))
+    excelTb = dict(configP.items('table'))
+    stcParaName = dict(configP.items('static'))
+    dymParaName = dict(configP.items('dynamic'))
+    dymDayselect = dict(configP.items('dynamicdataselect'))
+    # inout = dict(inout)
+    # excelTb = dict(tbName)
+    # stcParaName = dict(stcParaName)
+    # dymParaName = dict(dymParaName)
+    # dymDayselect = dict(dymDayselect)
     print(inout)
-    return inout,excelTb,stcParaName,dymParaName
+    return inout,excelTb,stcParaName,dymParaName,dymDayselect
 
 if __name__ == '__main__':
     para = get_stcAnddym()

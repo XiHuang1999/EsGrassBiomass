@@ -21,14 +21,17 @@ import readConfig
 if __name__=="__main__":
     '''读取参数文件，并初始化参数'''
     if os.path.exists(EsInitialPath+os.sep+"Parameters.ini"):
-        inou
-        tParas,excelParas,staticParas,dynamicParas = readConfig.get_stcAnddym()
-        outPath = inoutParas['out']
-        exlFile = excelParas['exlfile']
-        staticKey = list(staticParas.keys())
-        dynamicKey = list(dynamicParas.keys())
-        staticPath = list(staticParas.values())
-        dynamicPath = list(dynamicParas.values())
+        inoutParas,excelParas,staticParasD,dynamicParasD,dymDayselect = readConfig.get_stcAnddym()
+        outPath = inoutParas['out'] #输出路径
+        exlFile = excelParas['exlfile'] #excel文件
+        staticKey = list(staticParasD.keys()) #静态数据关键字
+        staticPath = list(staticParasD.values()) #静态数据文件路径
+        dynamicKey = list(dynamicParasD.keys())  #动态数据关键字数
+        dynamicPath = list(dynamicParasD.values())   #动态数据文件路径
+        exec('dynamicPreduceKey='+dymDayselect['8daysdataname'])    #动态数据中8天数据
+        exec('dynamicPreduceDays='+dymDayselect['daysscope'])       #动态数据中选择范围
+
+
     else:
         # ==== Static Paramerters====
         # OutFile Path
@@ -49,12 +52,12 @@ if __name__=="__main__":
         staticKey = [f.split(os.sep)[-1].split(r'.')[0] for f in staticPath]
 
         # ==== Active Paramerters=====
-        activePath = [r'G:\1_BeiJingUP\AUGB\Data\20220629\TAVG',
+        dynamicPath = [r'G:\1_BeiJingUP\AUGB\Data\20220629\TAVG',
                        r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI',
                        r'G:\1_BeiJingUP\AUGB\Data\20220629\PRCP',
                        r'G:\1_BeiJingUP\AUGB\Data\20220629\SWRS']
 
-        activeKey = [f.split(os.sep)[-1] for f in activePath]
+        dynamicKey = [f.split(os.sep)[-1] for f in dynamicPath]
         activeData = [] #dict(zip(activeKey,activePath))
 
     '''读取站点文件'''
@@ -77,9 +80,49 @@ if __name__=="__main__":
     # allcsv.to_excel(outPath + os.sep + r'Table\All_yrs_Sites.xlsx', index=False)
     # allcsv.to_csv(outPath + os.sep + r'Table\All_yrs_Sites1.csv', index=False)
 
+    '''Dynamic raster Sample'''
+    # 过程文件夹创建
+    for vari in range(len(dynamicPreduceKey)):
+        for seasoni in range(len(dynamicPreduceDays)/2):
+            if os.path.exists(outPath + os.sep + dynamicPreduceKey[vari].upper() + str(seasoni)):
+                os.makedirs(outPath + os.sep + dynamicPreduceKey[vari].upper() + str(seasoni))
+    # 预处理数据 产生过程文件，并更新数据路径
+    for yr in range(2000,2020):
+        for seasoni in range(len(dynamicPreduceDays)/2):
+            start8Day = dynamicPreduceDays[seasoni * 2] // 8 + 1  # 第16个8天开始 此处的16开始为1
+            end8Day = dynamicPreduceDays[seasoni * 2 + 1] // 8  # 第30个8天结束
+
+            if yr%4 != 0:
+                for vari in range(len(dynamicPreduceKey)):
+                    filelist = glob(dynamicParasD[dynamicPreduceKey[vari]] + os.sep + r'*' + dynamicPreduceKey[vari].upper() + r'*.tif')
+                    filelist.sort()
+                    filelist = filelist[start8Day-1:end8Day]
+
+                    bdays = 8 - dynamicPreduceDays[seasoni * 2] % 8 + 1  # 在要处理的8天数据中，第一个8天的天数
+                    edays = dynamicPreduceDays[seasoni * 2 + 1] % 8  # 在要处理的8天数据中，最后一个8天的天数
+
+                    # 8天数据处理
+                    if dynamicPreduceKey[vari].upper() == r'TAVG':
+                        rasterR,proj,geotrans = RasterMean_8Days(filelist,bdays,edays)
+                    else:
+                        rasterR, proj, geotrans = RasterSum_8Days(filelist, bdays, edays)
+
+                    # 输出过程栅格
+                    outRasterFileName = outPath + os.sep + dynamicPreduceKey[vari].upper() + str(seasoni) + os.sep + dynamicPreduceKey[vari].upper()+r'_'+ str(yr) +r'.tif'
+                    write_img(outRasterFileName, proj, geotrans, rasterR)
+
+                    # 下一次循环变量赋值
+                    start8Day = dynamicPreduceDays[seasoni+1 * 2] // 8   # 第16个8天开始 此处的16开始为1
+                    end8Day = dynamicPreduceDays[seasoni+1 * 2 + 1] // 8  # 第30个8天结束
+
+
+
+
+
+
     '''Static raster Sample'''
     vv = EsRaster.SampleRaster(staticPath,r'G:\1_BeiJingUP\CommonData\temp\Export_Output_2.shp','ID')
-    '''Dynamic raster Sample'''
+
     # for sheet in sheetList[:-1]:
 
 
