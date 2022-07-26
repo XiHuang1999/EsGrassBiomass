@@ -72,7 +72,8 @@ def ResampleRaster(tif=r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif'
     windows = [win for ji, win in scr.block_windows()] # 获取数据读取窗口
     p = multiprocessing.Pool(processes=pCount)
     t1 = time.time()
-    res = p.map(generate_mulcpu_vars, list(zip(windows, [tif] * len(windows))))
+    # res = p.map(generate_mulcpu_vars, list(zip(windows, [tif] * len(windows))))
+    res = run_imap_mp(generate_mulcpu_vars, list(zip(windows, [tif] * len(windows))),20)
     p.close()
     p.join()
     print('Time: %.2fs' % (time.time() - t1))
@@ -117,7 +118,7 @@ def Parallel_Block(wins,scr):
     # wins,scr = args  # 读入了两个变量，需要计算的wins下标，以及Manager Namespace
     data = scr.read(window=wins)[0]
     return data
-def Parallel_Block1(wins,tif):
+def Parallel_Block(wins,tif):
     '''
 
     :param blk:
@@ -141,12 +142,40 @@ def Parallel_Block1(wins,tif):
 #     data = scr.read(window=wins)[0]
 #     return data
 
+def run_imap_mp(func, argument_list, num_processes='', is_tqdm=True):
+    '''
+    并行计算启动器
+    :param func: function,函数
+    :param argument_list: list,参数列表
+    :param num_processes: int,进程数，不填默认为总核心3
+    :param is_tqdm: bool,是否展示进度条，默认展示
+    :return: 并行返回值
+    '''
+
+    result_list_tqdm = []
+    try:
+        import multiprocessing
+        if num_processes == '':
+            num_processes = multiprocessing.cpu_count()-3
+        pool = multiprocessing.Pool(processes=num_processes)
+        if is_tqdm:
+            from tqdm import tqdm
+            for result in tqdm(pool.imap(func=func, iterable=argument_list), total=len(argument_list)):
+                result_list_tqdm.append(result)
+        else:
+            for result in pool.imap(func=func, iterable=argument_list):
+                result_list_tqdm.append(result)
+        pool.close()
+    except:
+        result_list_tqdm = list(map(func,argument_list))
+    return result_list_tqdm
+
+
+
 if __name__=="__main__":
 
     d = ResampleRaster(r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif',10)
     print()
-
-
 
 
 
