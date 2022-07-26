@@ -88,8 +88,14 @@ def ResampleRaster(tif=r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif'
     #         results = np.append(results,colData,axis=0)
     # t2 = time.time()
     # print('Time: %.2fs' % (t2 - t1))
-
     del paraRes, colData
+
+    #
+    out_meta = src.meta  # 元数据
+    out_meta.update({"driver": "GTiff",
+                     "height": results.shape[0],
+                     "width": results.shape[1],
+                     "transform": out_transform})  # 转换函数
     return results
 
 def generate_mulcpu_vars(args):
@@ -152,14 +158,74 @@ if __name__=="__main__":
     tif = r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif'
     tif1 = r'G:\1_BeiJingUP\AUGB\Data\20220629\SWRS\SWRS_2000001.tif'
     # d = ResampleRaster(tif1,2044,2499,2)
-    d = ResampleRaster(tif,10000,10000,20)
+    data = ResampleRaster(tif,10000,10000,20)
     print()
 
-#
-# from rasterio.windows import Window
-# tif1 = r'G:\1_BeiJingUP\AUGB\Data\20220629\SWRS\SWRS_2000001.tif'
-# tif = r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif'
-# scr1 = rasterio.open(tif1)      # 数据属性读取
+# 投影测试
+from rasterio.windows import Window
+import numpy as np
+import rasterio
+from rasterio.warp import calculate_default_transform, reproject, Resampling
+tif1 = r'G:\1_BeiJingUP\AUGB\Data\20220629\SWRS\SWRS_2000001.tif'
+tif2 = r'G:\1_BeiJingUP\AUGB\Data\SWRS_2000001_NoProj.tif'
+tif = r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif'
+scr1 = rasterio.open(tif1)      # 数据属性读取
+scr2 = rasterio.open(tif2)      # 数据属性读取
+transform, width, height = calculate_default_transform(
+    scr2.crs,    # 输入坐标系
+    scr1.crs,    # 输出坐标系
+    scr2.width,  # 输入图像宽
+    scr2.height, # 输入图像高
+    *scr2.bounds)# 输入数据源的图像范围
+# 更新数据集的元数据信息
+kwargs = scr2.meta.copy()
+kwargs.update({
+    'crs': scr1.crs,
+    'transform': transform,
+    'width': width,
+    'height': height
+})
+with rasterio.open(r'G:\1_BeiJingUP\AUGB\Data\tempProj6.tif', 'w', **kwargs) as dst:
+    for i in range(1, scr2.count + 1):
+        src_scr = scr2.read(i)
+        des_scr = np.empty((height, width), dtype=kwargs['dtype'])  # 初始化输出图像数据
+        reproject(
+            # 源文件参数
+            source=src_scr,                 #rasterio.band(scr2, i),
+            src_crs=scr2.crs,
+            src_transform=scr2.transform,
+            # 目标文件参数
+            destination=des_scr,            #rasterio.band(dst, i),
+            dst_transform=transform,
+            dst_crs=scr1.crs,
+            # dst_nodata=np.nan,
+            resampling=Resampling.nearest   #还有：Resampling.average
+			#num_threads=2
+        )
+        dst.write(des_scr, i)
+
+# with rasterio.open('rasterio/tests/data/RGB.byte.tif') as src:
+#     transform, width, height = calculate_default_transform(
+#         src.crs, dst_crs, src.width, src.height, *src.bounds)
+#     kwargs = src.meta.copy()
+#     kwargs.update({
+#         'crs': dst_crs,
+#         'transform': transform,
+#         'width': width,
+#         'height': height
+#     })
+#     with rasterio.open('/tmp/RGB.byte.wgs84.tif', 'w', **kwargs) as dst:
+#         for i in range(1, src.count + 1):
+#             reproject(
+#                 source=rasterio.band(src, i),
+#                 destination=rasterio.band(dst, i),
+#                 src_transform=src.transform,
+#                 src_crs=src.crs,
+#                 dst_transform=transform,
+#                 dst_crs=dst_crs,
+#                 resampling=Resampling.nearest)
+
+##窗口读取
 # windows1 = [win1 for ij1, win1 in scr1.block_windows()]
 # row, col = scr.shape[0],scr.shape[1]
 #
@@ -201,24 +267,3 @@ if __name__=="__main__":
 
 # import dill
 # dill.dump_session('file_name.pkl')
-
-with rasterio.open('rasterio/tests/data/RGB.byte.tif') as src:
-    transform, width, height = calculate_default_transform(
-        src.crs, dst_crs, src.width, src.height, *src.bounds)
-    kwargs = src.meta.copy()
-    kwargs.update({
-        'crs': dst_crs,
-        'transform': transform,
-        'width': width,
-        'height': height
-    })
-    with rasterio.open('/tmp/RGB.byte.wgs84.tif', 'w', **kwargs) as dst:
-        for i in range(1, src.count + 1):
-            reproject(
-                source=rasterio.band(src, i),
-                destination=rasterio.band(dst, i),
-                src_transform=src.transform,
-                src_crs=src.crs,
-                dst_transform=transform,
-                dst_crs=dst_crs,
-                resampling=Resampling.nearest)
