@@ -20,33 +20,42 @@ from sklearn.tree import export_graphviz
 import pydotplus
 import os
 
-def RFEstimate(X,Y,test_size=0.8):
+def RFEstimate(X,
+               Y,
+               train_size=0.8,
+               RF_kwargs={'random_state':100,
+                         'bootstrap':True,
+                         'max_depth':2,
+                         'max_features':2,
+                         'min_samples_leaf':3,
+                         'min_samples_split':5,
+                         'n_estimators':3}):
     '''
     使用随机森林预测地上生物量
     :param X: 自变量,X = dataset.iloc[:, 0:4].values
     :param Y: 因变量,y = dataset.iloc[:, 4].values
-    :param test_size:
+    :param test_size: float,训练样本
     :return:
     '''
 
 
-    # 将数据分为训练集和测试集
+    # 将数据分为训练样本和验证样本
     X_train, X_test, y_train, y_test = train_test_split(X,
                                                         Y,
-                                                        test_size=0.2,
+                                                        test_size=1-train_size,
                                                         random_state=0)
-    regr = RandomForestRegressor()
-    # regr = RandomForestRegressor(random_state=100,
-    #                              bootstrap=True,
-    #                              max_depth=2,
-    #                              max_features=2,
-    #                              min_samples_leaf=3,
-    #                              min_samples_split=5,
-    #                              n_estimators=3)
-    pipe = Pipeline([('scaler', StandardScaler()), ('reduce_dim', PCA()),
-                     ('regressor', regr)])
-    pipe.fit(X_train, y_train)
-    ypipe = pipe.predict(X_test)
+    # regressor = RandomForestRegressor()
+    regressor = RandomForestRegressor(random_state=RF_kwargs['random_state'],
+                                 bootstrap=RF_kwargs['bootstrap'],
+                                 max_depth=RF_kwargs['max_depth'],
+                                 max_features=RF_kwargs['max_features'],
+                                 min_samples_leaf=RF_kwargs['min_samples_leaf'],
+                                 min_samples_split=RF_kwargs['min_samples_split'],
+                                 n_estimators=RF_kwargs['n_estimators'])
+
+
+    regressor.fit(X_train, y_train)
+    ypipe = regressor.predict(X_test)
 
 
     # 执行一次

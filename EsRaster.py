@@ -85,7 +85,7 @@ def SampleRaster(tifList, ptShp, siteName, nirCellNum=1, Scope=''):
     :param siteName: 点字段名称
     :param nirCellNum: 方格大小，取像元附近均值（只能奇数）；默认值为1，为像元本身
     :param Scope: 筛选范围，eg：“>0” or ""
-    :return:
+    :return: pd.DataFrame
     '''
     # 存放每个点的xy坐标的数组
     xValues = []
@@ -162,6 +162,9 @@ def SampleRaster(tifList, ptShp, siteName, nirCellNum=1, Scope=''):
                 values[i][tif_i] = valueList.mean()
             else:
                 print('EsRaster Error！ Shp ID in '+str(i))
+    colmns = [tif.split(os.sep)[-2] + r'_' + os.path.basename(tif).split(r'_')[0] for tif in tifList]
+    values = pd.DataFrame(values, columns=colmns,index=list(ptShp.index))
+
     return values
 
 def RasterMean_8Days(DayFileList,beginDays,endDays):
@@ -407,3 +410,87 @@ def run_imap_mp(func, argument_list, num_processes='', is_tqdm=True):
     except:
         result_list_tqdm = list(map(func,argument_list))
     return result_list_tqdm
+
+def GdalReprojectImage(srcFile, outFile, refFile=r'G:\1_BeiJingUP\AUGB\Data\20220629\TAVG\TAVG_2000001.tif', resampleFactor=1, sampleMethod='average'):
+    """
+    栅格重采样,最近邻(gdal.gdalconst.GRA_NearestNeighbour)，采样方法自选。
+    :param srcFile: str,待处理源文件
+    :param outFile: str,输出文件
+    :param refFile: str,参考投影的影像
+    :param resampleFactor: float or int,重采样因子
+    :param sampleMethod: str,采样方法
+    :return: None
+    """
+    # 参数初始化
+    smpM = {'near':gdal.gdalconst.GRA_NearestNeighbour,
+            'bilinear': gdal.gdalconst.GRA_Bilinear,
+            'cubic': gdal.gdalconst.GRA_Cubic,
+            'cubicspline': gdal.gdalconst.GRA_CubicSpline,
+            'lanczos': gdal.gdalconst.GRA_Lanczos,
+            'average': gdal.gdalconst.GRA_Average,
+            'mode':gdal.gdalconst.GRA_Mode}
+
+    # 获取参考影像投影信息
+    referencefile = gdal.Open(refFile, gdal.GA_ReadOnly)
+    referencefileProj = referencefile.GetProjection()
+    referencefileTrans = referencefile.GetGeoTransform()
+
+    # 载入原始栅格
+    dataset = gdal.Open(srcFile, gdal.GA_ReadOnly)
+    srcProjection = dataset.GetProjection()
+    srcGeoTransform = dataset.GetGeoTransform()
+    srcWidth = dataset.RasterXSize
+    srcHeight = dataset.RasterYSize
+    srcBandCount = dataset.RasterCount
+    srcNoDatas = [
+        dataset.GetRasterBand(bandIndex).GetNoDataValue()
+        for bandIndex in range(1, srcBandCount+1)
+    ]
+    srcBandDataType = dataset.GetRasterBand(1).DataType
+
+    # 创建重采样后的栅格
+    # srcFileName = os.path.basename(srcFile)   #获取数据属性
+    # name = os.path.splitext(srcFileName)[0]   #获取文件名、后缀
+    # outFileName = name + ".tif"
+    # outFilePath = os.path.join(saveFolderPath, outFileName)
+    driver = gdal.GetDriverByName('GTiff')
+    outWidth = int(srcWidth * resampleFactor)
+    outHeight = int(srcHeight * resampleFactor)
+    outDataset = driver.Create(
+        outFile,
+        outWidth,
+        outHeight,
+        srcBandCount,
+        srcBandDataType
+    )
+    geoTransforms = list(srcGeoTransform)
+    geoTransforms[1] = geoTransforms[1]/resampleFactor
+    geoTransforms[5] = geoTransforms[5]/resampleFactor
+    outGeoTransform = tuple(geoTransforms)
+    outDataset.SetGeoTransform(referencefileTrans)
+    outDataset.SetProjection(referencefileProj)
+    for bandIndex in range(1, srcBandCount+1):
+        band = outDataset.GetRasterBand(bandIndex)
+        band.SetNoDataValue(srcNoDatas[bandIndex-1])
+    gdal.ReprojectImage(
+        dataset,            # 输入数据集
+        outDataset,         # 输出文件
+        srcProjection,      # 参考投影
+        srcProjection,      # 参考投影
+        smpM[sampleMethod], # 重采样方法
+        0.0, 0.0,           # 容差参数,容差参数,回调函数
+    )
+    return 0
+
+def read_tifList(tifs):
+    '''
+    Concat Tif List
+    :param tifs: list,Tiff列表
+    :return: pd.Dataframe,一个tiff一列
+    '''
+    alldata = pd.DataFrame([])
+    for tif in tifs:
+        img_proj,img_geotrans,data = read_img(tif)
+        data = data.reshape([-1,1])
+        alldata = pd.concat([alldata,pd.DataFrame(data)],axis=1,join='outer')
+    return alldata

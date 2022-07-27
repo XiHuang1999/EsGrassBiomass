@@ -166,15 +166,23 @@ if __name__=="__main__":
     # allcsv.to_csv(outPath + os.sep + r'Table\All_yrs_Sites1.csv', index=False)
 
 
-    '''Dynamic raster sample'''
+    '''## Sample ##'''
+    allyr = pd.DataFrame([])
+    for yr in range(2000,2021):
+        yrcsv = allcsv[allcsv['Year']==yr]
+        '''Static raster Sample'''
+        stcDf = EsRaster.SampleRaster(staticPath, yrcsv, 'ID')
+        yrcsv = pd.concat([yrcsv,stcDf],axis=1,join='outer')
 
+        '''Dynamic raster sample'''
+        dymtif = [dymPath+os.sep+dymKey.upper()[:-1]+r'_'+str(yr)+r'.tif' for dymKey,dymPath in zip(list(dynamicParasD.keys())[1:],list(dynamicParasD.values())[1:])]
+        dymDf = EsRaster.SampleRaster(dymtif,yrcsv,'ID')
+        yrcsv = pd.concat([yrcsv, dymDf], axis=1, join='outer')
 
-
-
-    '''Static raster Sample'''
-    vv = EsRaster.SampleRaster(staticPath,r'G:\1_BeiJingUP\CommonData\temp\Export_Output_2.shp','ID')
-
+        '''Merge'''
+        allyr = pd.concat([allyr, yrcsv], axis=0, join='outer')
     # for sheet in sheetList[:-1]:
+
 
 
 

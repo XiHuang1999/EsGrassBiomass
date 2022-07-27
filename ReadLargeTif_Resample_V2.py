@@ -54,7 +54,7 @@ def ResampleRaster(tif=r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif'
     paraRes = run_imap_mp(generate_mulcpu_vars, list(zip(windows, [tif] * len(windows))),poolCount)
     p.close()
     p.join()
-    print('Time: %.2fs' % (time.time() - t1))
+    print('Reading Time: %.2fs' % (time.time() - t1))
     # del windows,p
 
     # 合并数据（方法一） 效率比方法二高
@@ -68,7 +68,7 @@ def ResampleRaster(tif=r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif'
             colData = np.append(colData,paraRes[r*(-(-col // blockCol))+c],axis=1)
         results = np.append(results,colData,axis=0)
     t2 = time.time()
-    print('Time: %.2fs' % (t2 - t1))
+    print('Merge Time: %.2fs' % (t2 - t1))
 
     # # 检查合并结果 出图
     from matplotlib import pyplot
@@ -91,12 +91,19 @@ def ResampleRaster(tif=r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif'
     del paraRes, colData
 
     # 更新元数据
+    import numpy as np
+    results = np.load(r"G:\1_BeiJingUP\AUGB\Data\20220629\Pycharm_result.npy", allow_pickle=True)
+    windows = np.load(r"G:\1_BeiJingUP\AUGB\Data\20220629\Pycharm_windows.npy", allow_pickle=True)
+
+    results = (results * 1.2 / 255 - 0.2)
+    # results = list(map(lambda x : ((x * 12000 / 255 - 2000) / 10000), results))
+
     scr_Temp = rasterio.open(r'G:\1_BeiJingUP\AUGB\Data\20220629\TAVG\TAVG_2000001.tif')  # 模板数据属性读取
     transform, width, height = calculate_default_transform(
         scr.crs,  # 输入坐标系
         scr_Temp.crs,  # 输出坐标系
-        results.shape[1],  # 输入图像宽
-        results.shape[0],  # 输入图像高
+        results.shape[1], #int(scr.shape[1]/4),  # 输入图像宽
+        results.shape[0], #int(scr.shape[0]/4),  # 输入图像高
         *scr.bounds)  # 输入数据源的图像范围
     # 更新数据集的元数据信息
     kwargs = scr.meta.copy()
@@ -104,37 +111,64 @@ def ResampleRaster(tif=r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif'
         'crs': scr_Temp.crs,
         'transform': transform,
         'width': width,
-        'height': height
+        'height': height,
+        'dtype': 'float64'
     })
+
     # 写栅格
-    with rasterio.open(outTif, 'w', **kwargs) as dst:
-        for i in range(1, scr.count + 1):
-            src_scr = scr.read(i)
-            des_scr = np.empty((height, width), dtype=kwargs['dtype'])  # 初始化输出图像数据
+    # t1 = time.time()
+    # outTif = r"G:\1_BeiJingUP\AUGB\Data\NDVI2015_3.tif"
+    for bandi in range(1, scr.count + 1):
+        with rasterio.open(outTif, 'w', **kwargs) as dst:
+            # src_scr = scr.read(bandi)
+            #des_scr = np.empty((height, width), dtype='float64')  # 初始化输出图像数据 str(results.dtype)
+            des_scr = np.zeros(results.shape, np.float64)
+            # reproject(
+            #     # 源文件参数
+            #     source=results,  # rasterio.band(scr2, i),
+            #     src_crs=scr.crs,
+            #     src_transform=scr.transform,
+            #     # 目标文件参数
+            #     destination=des_scr,  # rasterio.band(dst, i),des_scr
+            #     dst_transform=transform,
+            #     dst_crs=scr_Temp.crs,
+            #     # dst_nodata=np.nan,
+            #     resampling=Resampling.nearest  # 还有：Resampling.average
+            #     # num_threads=2
+            # )
             reproject(
-                # 源文件参数
-                source=src_scr,  # rasterio.band(scr2, i),
-                src_crs=scr.crs,
+                source=results,  # rasterio.band(scr2, i),
+                destination=des_scr,  # rasterio.band(dst, i),des_scr
                 src_transform=scr.transform,
-                # 目标文件参数
-                destination=des_scr,  # rasterio.band(dst, i),
+                src_crs=scr.crs,
                 dst_transform=transform,
-                dst_crs=scr_Temp.crs,
+                dst_crs=scr_Temp.crs
                 # dst_nodata=np.nan,
-                resampling=Resampling.nearest  # 还有：Resampling.average
+                # resampling=Resampling.nearest  # 还有：Resampling.average
                 # num_threads=2
             )
-            dst.write(des_scr, i)
-
+            for i,win in zip(range(len(windows)),windows):
+                dst.write(results[windows[i].row_off:windows[i].row_off+windows[i].height,
+                          windows[i].col_off:windows[i].col_off+windows[i].width],
+                          bandi,
+                          window=windows[i])
+            # for i,win in zip(range(len(windows)),windows):
+            #     dst.write(results[windows[i].row_off:windows[i].row_off+windows[i].height,
+            #               windows[i].col_off:windows[i].col_off+windows[i].width],
+            #               bandi,
+            #               window=windows[i])
+        dst.close()  # 写入后关闭文件
+    # t2 = time.time()
+    # print('Write Time: %.2fs' % (t2 - t1))
     # return results,kwargs
 
-def generate_mulcpu_vars(args):
+def generate_mulcpu_vars_GdalReprojectImage(args):
     '''
     并行多参数调用
     :param args: 读入了两个变量，需要计算的wins下标，以及Manager Namespace
     :return:
     '''
-    return Parallel_BlockRead(args[0],args[1])
+    return GdalReprojectImage(args[0],args[1],args[2],args[3],args[4])
 
 
 def Parallel_BlockRead(wins,tif):
@@ -181,13 +215,155 @@ def run_imap_mp(func, argument_list, num_processes='', is_tqdm=True):
         result_list_tqdm = list(map(func,argument_list))
     return result_list_tqdm
 
+import gdal,os
 
+def GdalReprojectImage_Method1(srcFilePath, resampleFactor, saveFolderPath):
+    """
+    栅格重采样,最近邻(gdal.gdalconst.GRA_NearestNeighbour)，
+    采样方法自选。
+    :param srcFilePath:
+    :param saveFolderPath:
+    :return:
+    """
+    # 载入原始栅格
+    dataset = gdal.Open(srcFilePath, gdal.GA_ReadOnly)
+    srcProjection = dataset.GetProjection()
+    srcGeoTransform = dataset.GetGeoTransform()
+    srcWidth = dataset.RasterXSize
+    srcHeight = dataset.RasterYSize
+    srcBandCount = dataset.RasterCount
+    srcNoDatas = [
+        dataset.GetRasterBand(bandIndex).GetNoDataValue()
+        for bandIndex in range(1, srcBandCount+1)
+    ]
+    srcBandDataType = dataset.GetRasterBand(1).DataType
+    srcFileName = os.path.basename(srcFilePath)
+    name = os.path.splitext(srcFileName)[0]
+    # 创建重采样后的栅格
+    outFileName = name + ".tif"
+    outFilePath = os.path.join(saveFolderPath, outFileName)
+    driver = gdal.GetDriverByName('GTiff')
+    outWidth = int(srcWidth * resampleFactor)
+    outHeight = int(srcHeight * resampleFactor)
+    outDataset = driver.Create(
+        outFilePath,
+        outWidth,
+        outHeight,
+        srcBandCount,
+        srcBandDataType
+    )
+    geoTransforms = list(srcGeoTransform)
+    geoTransforms[1] = geoTransforms[1]/resampleFactor
+    geoTransforms[5] = geoTransforms[5]/resampleFactor
+    outGeoTransform = tuple(geoTransforms)
+    outDataset.SetGeoTransform(outGeoTransform)
+    outDataset.SetProjection(srcProjection)
+    for bandIndex in range(1, srcBandCount+1):
+        band = outDataset.GetRasterBand(bandIndex)
+        band.SetNoDataValue(srcNoDatas[bandIndex-1])
+    gdal.ReprojectImage(
+        dataset,
+        outDataset,
+        srcProjection,
+        srcProjection,
+        gdal.gdalconst.GRA_NearestNeighbour,
+        0.0, 0.0,
+    )
+    return 0
+
+def GdalReprojectImage(srcFile, outFile, refFile=r'G:\1_BeiJingUP\AUGB\Data\20220629\TAVG\TAVG_2000001.tif', resampleFactor=1, sampleMethod='near'):
+    """
+    栅格重采样,最近邻(gdal.gdalconst.GRA_NearestNeighbour)，采样方法自选。
+    :param srcFile: str,待处理源文件
+    :param outFile: str,输出文件
+    :param refFile: str,参考投影的影像
+    :param resampleFactor: float or int,重采样因子
+    :param sampleMethod: str,采样方法
+    :return: None
+    """
+    # 参数初始化
+    smpM = {'near':gdal.gdalconst.GRA_NearestNeighbour,
+            'bilinear': gdal.gdalconst.GRA_Bilinear,
+            'cubic': gdal.gdalconst.GRA_Cubic,
+            'cubicspline': gdal.gdalconst.GRA_CubicSpline,
+            'lanczos': gdal.gdalconst.GRA_Lanczos,
+            'average': gdal.gdalconst.GRA_Average,
+            'mode':gdal.gdalconst.GRA_Mode}
+
+    # 获取参考影像投影信息
+    referencefile = gdal.Open(refFile, gdal.GA_ReadOnly)
+    referencefileProj = referencefile.GetProjection()
+    referencefileTrans = referencefile.GetGeoTransform()
+
+    # 载入原始栅格
+    dataset = gdal.Open(srcFile, gdal.GA_ReadOnly)
+    srcProjection = dataset.GetProjection()
+    srcGeoTransform = dataset.GetGeoTransform()
+    srcWidth = dataset.RasterXSize
+    srcHeight = dataset.RasterYSize
+    srcBandCount = dataset.RasterCount
+    srcNoDatas = [
+        dataset.GetRasterBand(bandIndex).GetNoDataValue()
+        for bandIndex in range(1, srcBandCount+1)
+    ]
+    srcBandDataType = dataset.GetRasterBand(1).DataType
+
+    # 创建重采样后的栅格
+    # srcFileName = os.path.basename(srcFile)   #获取数据属性
+    # name = os.path.splitext(srcFileName)[0]   #获取文件名、后缀
+    # outFileName = name + ".tif"
+    # outFilePath = os.path.join(saveFolderPath, outFileName)
+    driver = gdal.GetDriverByName('GTiff')
+    outWidth = int(srcWidth * resampleFactor)
+    outHeight = int(srcHeight * resampleFactor)
+    outDataset = driver.Create(
+        outFile,
+        outWidth,
+        outHeight,
+        srcBandCount,
+        srcBandDataType
+    )
+    geoTransforms = list(srcGeoTransform)
+    geoTransforms[1] = geoTransforms[1]/resampleFactor
+    geoTransforms[5] = geoTransforms[5]/resampleFactor
+    outGeoTransform = tuple(geoTransforms)
+    outDataset.SetGeoTransform(outGeoTransform)
+    outDataset.SetProjection(referencefileProj)
+    for bandIndex in range(1, srcBandCount+1):
+        band = outDataset.GetRasterBand(bandIndex)
+        band.SetNoDataValue(srcNoDatas[bandIndex-1])
+    gdal.ReprojectImage(
+        dataset,            # 输入数据集
+        outDataset,         # 输出文件
+        srcProjection,      # 参考投影
+        srcProjection,      # 参考投影
+        smpM[sampleMethod], # 重采样方法
+        0.0, 0.0,           # 容差参数,容差参数,回调函数
+    )
+    return 0
 
 if __name__=="__main__":
-    tif = r'K:\OuyangXiHuang\AGB\NDVI_董金玮\data\NDVImax2015.tif'
-    tif1 = r'G:\1_BeiJingUP\AUGB\Data\20220629\SWRS\SWRS_2000001.tif'
+
+    # GdalReprojectImage(r"G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2001.tif", 0.1,
+    #                    r"G:\1_BeiJingUP\AUGB\Data")
+    outPath = r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI'
+    tiflist = glob(r'K:\OuyangXiHuang\AGB\NDVI_董金玮\data\*NDVI*.tif')
+    tiflist.sort()
+    outtiflist = [outPath+os.sep+os.path.basename(tif).replace(r'max',r'_') for tif in tiflist]
+    reftiflist = [r'G:\1_BeiJingUP\AUGB\Data\20220629\TAVG\TAVG_2000001.tif' for i in range(len(tiflist))]
+    rsplist = [0.3 for i in range(len(tiflist))]
+    mtdlist = ['near' for i in range(len(tiflist))]
+
+    print('Start')
+    kwgs = list(zip(tiflist,outtiflist,tiflist,rsplist,mtdlist))
+    run_imap_mp(generate_mulcpu_vars_GdalReprojectImage, kwgs, num_processes=12, is_tqdm=True)
+    print('Done')
+    print()
+
+    # tif = r'K:\OuyangXiHuang\AGB\NDVI_董金玮\data\NDVImax2015.tif'
+    # tif1 = r'G:\1_BeiJingUP\AUGB\Data\20220629\SWRS\SWRS_2000001.tif'
     # ResampleRaster(tif1,r'G:\1_BeiJingUP\AUGB\Data\temp.tif',2044,2499,2)
-    ResampleRaster(tif,r'G:\1_BeiJingUP\AUGB\Data\temp.tif',12000,12000,24)
+    # ResampleRaster(tif,r'G:\1_BeiJingUP\AUGB\Data\temp.tif',12000,12000,24)
     # inPath = r'K:\OuyangXiHuang\AGB\NDVI_董金玮\data'
     # outPath = r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI'
     # inTif = glob(inPath+os.sep+r'NDVI*.tif')
@@ -197,6 +373,30 @@ if __name__=="__main__":
     #     outtif = outPath + os.sep + tif.split(os.sep)[-1]
     #     ResampleRaster(tif,outtif,12000,12000,24)
     # print()
+
+
+#
+# ##裁剪测试
+# from osgeo import gdal
+#
+# input_shape = r"G:\1_BeiJingUP\AUGB\Data\NDVImax2001_Temp.tif"
+# input_shape = gdal.Open(input_shape)
+# output_raster = r"G:\1_BeiJingUP\AUGB\Data\NDVImax2001_Wrap.tif"
+# # tif输入路径，打开文件
+# input_raster = r"G:\1_BeiJingUP\AUGB\Data\NDVImax2001.tif"
+# # 矢量文件路径，打开矢量文件
+# input_raster = gdal.Open(input_raster)
+# # 开始裁剪，一行代码，爽的飞起
+# ds = gdal.Warp(output_raster,
+#                input_raster,
+#                format='GTiff',
+#                cutlineDSName=input_shape,
+#                cutlineWhere="FIELD = 'whatever'",
+#                dstNodata=0)
+# ds = None
+
+
+
 
 # # 投影测试
 # from rasterio.windows import Window
@@ -222,7 +422,6 @@ if __name__=="__main__":
 #     'width': width,
 #     'height': height
 # })
-# for win in windows
 # with rasterio.open(r'G:\1_BeiJingUP\AUGB\Data\tempProj6.tif', 'w', **kwargs) as dst:
 #     for i in range(1, scr2.count + 1):
 #         src_scr = scr2.read(i)
@@ -238,9 +437,31 @@ if __name__=="__main__":
 #             dst_crs=scr1.crs,
 #             # dst_nodata=np.nan,
 #             resampling=Resampling.nearest   #还有：Resampling.average
-# 			#num_threads=2
+#             #num_threads=2
 #         )
 #         dst.write(des_scr, i)
+
+
+# ## 窗口写
+# outTif = r"G:\1_BeiJingUP\AUGB\Data\NDVI2015_1.tif"
+# with rasterio.open(outTif, 'w', **kwargs) as dst:
+#     des_scr = np.zeros(results.shape, np.float64)
+#     reproject(
+#         # 源文件参数
+#         source=results,  # rasterio.band(scr2, i),
+#         src_crs=scr.crs,
+#         src_transform=scr.transform,
+#         # 目标文件参数
+#         destination=des_scr,  # rasterio.band(dst, i),des_scr
+#         dst_transform=transform,
+#         dst_crs=scr_Temp.crs,
+#         # dst_nodata=np.nan,
+#         # resampling=Resampling.nearest  # 还有：Resampling.average
+#         # num_threads=2
+#     )
+#     for win in windows:
+#         dst.write(results, bandi)
+#     dst.close()
 
 # with rasterio.open('rasterio/tests/data/RGB.byte.tif') as src:
 #     transform, width, height = calculate_default_transform(
