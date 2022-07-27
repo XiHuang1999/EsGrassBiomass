@@ -6,27 +6,27 @@
 # @File : ReadLargeTif_Resample_V2.py
 # @Software: PyCharm
 import rasterio
-import glob
+from glob import glob
 import numpy as np
 from scipy import stats
 from rasterio.enums import Resampling
 from rasterio.windows import Window
-import time,multiprocessing
+import time,multiprocessing,os
 from multiprocessing import Manager
 import rasterio
 from ctypes import c_char_p
 from tqdm import tqdm
-from rasterio.enums import Resampling
+from rasterio.warp import calculate_default_transform, reproject, Resampling
 
-
-def ResampleRaster(tif=r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif',blockRow=10000,blockCol=10000,poolCount=10):
+def ResampleRaster(tif=r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif',outTif=r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\参数有错_NDVI.tif',blockRow=10000,blockCol=10000,poolCount=10):
     '''
     重采样栅格
     :param tif: str,栅格
+    :param outTif: str,输出栅格
     :param blockRow: int,按块读取时每块行数
     :param blockCol: int,按块读取时每块列数
     :param poolCount: int,并行核心数
-    :return: 并行返回值
+    :return: ndarray,并行返回数;object,属性参数;
     '''
     print('并行读取Tif：'+tif)
     # 数据属性读取
@@ -55,7 +55,7 @@ def ResampleRaster(tif=r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif'
     p.close()
     p.join()
     print('Time: %.2fs' % (time.time() - t1))
-    del windows,p
+    # del windows,p
 
     # 合并数据（方法一） 效率比方法二高
     t1 = time.time()
@@ -63,17 +63,17 @@ def ResampleRaster(tif=r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif'
     for c in range(1, -(-col // blockCol)):
         results = np.append(results, paraRes[c], axis=1)
     for r in range(1,-(-row // blockRow)):
-        colData = paraRes [r*(-(-row // blockRow))]
+        colData = paraRes[r*(-(-col // blockCol))]
         for c in range(1,-(-col // blockCol)):
-            colData = np.append(colData,paraRes[r*(-(-row // blockRow))+c],axis=1)
+            colData = np.append(colData,paraRes[r*(-(-col // blockCol))+c],axis=1)
         results = np.append(results,colData,axis=0)
     t2 = time.time()
     print('Time: %.2fs' % (t2 - t1))
 
     # # 检查合并结果 出图
-    # from matplotlib import pyplot
-    # pyplot.imshow(results, cmap='pink') #r = np.append(np.append(paraRes[0], paraRes[1], axis=1), np.append(paraRes[2], paraRes[3], axis=1), axis=0)
-    # pyplot.show()
+    from matplotlib import pyplot
+    pyplot.imshow(results, cmap='pink') #r = np.append(np.append(paraRes[0], paraRes[1], axis=1), np.append(paraRes[2], paraRes[3], axis=1), axis=0)
+    pyplot.show()
 
     # # 合并数据（方法二） 效率比方法二高
     # t1 = time.time()
@@ -90,13 +90,43 @@ def ResampleRaster(tif=r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif'
     # print('Time: %.2fs' % (t2 - t1))
     del paraRes, colData
 
-    #
-    out_meta = src.meta  # 元数据
-    out_meta.update({"driver": "GTiff",
-                     "height": results.shape[0],
-                     "width": results.shape[1],
-                     "transform": out_transform})  # 转换函数
-    return results
+    # 更新元数据
+    scr_Temp = rasterio.open(r'G:\1_BeiJingUP\AUGB\Data\20220629\TAVG\TAVG_2000001.tif')  # 模板数据属性读取
+    transform, width, height = calculate_default_transform(
+        scr.crs,  # 输入坐标系
+        scr_Temp.crs,  # 输出坐标系
+        results.shape[1],  # 输入图像宽
+        results.shape[0],  # 输入图像高
+        *scr.bounds)  # 输入数据源的图像范围
+    # 更新数据集的元数据信息
+    kwargs = scr.meta.copy()
+    kwargs.update({
+        'crs': scr_Temp.crs,
+        'transform': transform,
+        'width': width,
+        'height': height
+    })
+    # 写栅格
+    with rasterio.open(outTif, 'w', **kwargs) as dst:
+        for i in range(1, scr.count + 1):
+            src_scr = scr.read(i)
+            des_scr = np.empty((height, width), dtype=kwargs['dtype'])  # 初始化输出图像数据
+            reproject(
+                # 源文件参数
+                source=src_scr,  # rasterio.band(scr2, i),
+                src_crs=scr.crs,
+                src_transform=scr.transform,
+                # 目标文件参数
+                destination=des_scr,  # rasterio.band(dst, i),
+                dst_transform=transform,
+                dst_crs=scr_Temp.crs,
+                # dst_nodata=np.nan,
+                resampling=Resampling.nearest  # 还有：Resampling.average
+                # num_threads=2
+            )
+            dst.write(des_scr, i)
+
+    # return results,kwargs
 
 def generate_mulcpu_vars(args):
     '''
@@ -123,7 +153,6 @@ def Parallel_BlockRead(wins,tif):
     # data = scr.read(window=wins)[0]
     return data
 
-def Parallel_BlockWarp(wins)
 
 def run_imap_mp(func, argument_list, num_processes='', is_tqdm=True):
     '''
@@ -155,54 +184,63 @@ def run_imap_mp(func, argument_list, num_processes='', is_tqdm=True):
 
 
 if __name__=="__main__":
-    tif = r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif'
+    tif = r'K:\OuyangXiHuang\AGB\NDVI_董金玮\data\NDVImax2015.tif'
     tif1 = r'G:\1_BeiJingUP\AUGB\Data\20220629\SWRS\SWRS_2000001.tif'
-    # d = ResampleRaster(tif1,2044,2499,2)
-    data = ResampleRaster(tif,10000,10000,20)
-    print()
+    # ResampleRaster(tif1,r'G:\1_BeiJingUP\AUGB\Data\temp.tif',2044,2499,2)
+    ResampleRaster(tif,r'G:\1_BeiJingUP\AUGB\Data\temp.tif',12000,12000,24)
+    # inPath = r'K:\OuyangXiHuang\AGB\NDVI_董金玮\data'
+    # outPath = r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI'
+    # inTif = glob(inPath+os.sep+r'NDVI*.tif')
+    # inTif.sort()
+    #
+    # for tif in inTif:
+    #     outtif = outPath + os.sep + tif.split(os.sep)[-1]
+    #     ResampleRaster(tif,outtif,12000,12000,24)
+    # print()
 
-# 投影测试
-from rasterio.windows import Window
-import numpy as np
-import rasterio
-from rasterio.warp import calculate_default_transform, reproject, Resampling
-tif1 = r'G:\1_BeiJingUP\AUGB\Data\20220629\SWRS\SWRS_2000001.tif'
-tif2 = r'G:\1_BeiJingUP\AUGB\Data\SWRS_2000001_NoProj.tif'
-tif = r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif'
-scr1 = rasterio.open(tif1)      # 数据属性读取
-scr2 = rasterio.open(tif2)      # 数据属性读取
-transform, width, height = calculate_default_transform(
-    scr2.crs,    # 输入坐标系
-    scr1.crs,    # 输出坐标系
-    scr2.width,  # 输入图像宽
-    scr2.height, # 输入图像高
-    *scr2.bounds)# 输入数据源的图像范围
-# 更新数据集的元数据信息
-kwargs = scr2.meta.copy()
-kwargs.update({
-    'crs': scr1.crs,
-    'transform': transform,
-    'width': width,
-    'height': height
-})
-with rasterio.open(r'G:\1_BeiJingUP\AUGB\Data\tempProj6.tif', 'w', **kwargs) as dst:
-    for i in range(1, scr2.count + 1):
-        src_scr = scr2.read(i)
-        des_scr = np.empty((height, width), dtype=kwargs['dtype'])  # 初始化输出图像数据
-        reproject(
-            # 源文件参数
-            source=src_scr,                 #rasterio.band(scr2, i),
-            src_crs=scr2.crs,
-            src_transform=scr2.transform,
-            # 目标文件参数
-            destination=des_scr,            #rasterio.band(dst, i),
-            dst_transform=transform,
-            dst_crs=scr1.crs,
-            # dst_nodata=np.nan,
-            resampling=Resampling.nearest   #还有：Resampling.average
-			#num_threads=2
-        )
-        dst.write(des_scr, i)
+# # 投影测试
+# from rasterio.windows import Window
+# import numpy as np
+# import rasterio
+# from rasterio.warp import calculate_default_transform, reproject, Resampling
+# tif1 = r'G:\1_BeiJingUP\AUGB\Data\20220629\SWRS\SWRS_2000001.tif'
+# tif2 = r'G:\1_BeiJingUP\AUGB\Data\SWRS_2000001_NoProj.tif'
+# tif = r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015.tif'
+# scr1 = rasterio.open(tif1)      # 数据属性读取-模板
+# scr2 = rasterio.open(tif2)      # 数据属性读取
+# transform, width, height = calculate_default_transform(
+#     scr2.crs,    # 输入坐标系
+#     scr1.crs,    # 输出坐标系
+#     scr2.width,  # 输入图像宽
+#     scr2.height, # 输入图像高
+#     *scr2.bounds)# 输入数据源的图像范围
+# # 更新数据集的元数据信息
+# kwargs = scr2.meta.copy()
+# kwargs.update({
+#     'crs': scr1.crs,
+#     'transform': transform,
+#     'width': width,
+#     'height': height
+# })
+# for win in windows
+# with rasterio.open(r'G:\1_BeiJingUP\AUGB\Data\tempProj6.tif', 'w', **kwargs) as dst:
+#     for i in range(1, scr2.count + 1):
+#         src_scr = scr2.read(i)
+#         des_scr = np.empty((height, width), dtype=kwargs['dtype'])  # 初始化输出图像数据
+#         reproject(
+#             # 源文件参数
+#             source=src_scr,                 #rasterio.band(scr2, i),
+#             src_crs=scr2.crs,
+#             src_transform=scr2.transform,
+#             # 目标文件参数
+#             destination=des_scr,            #rasterio.band(dst, i),
+#             dst_transform=transform,
+#             dst_crs=scr1.crs,
+#             # dst_nodata=np.nan,
+#             resampling=Resampling.nearest   #还有：Resampling.average
+# 			#num_threads=2
+#         )
+#         dst.write(des_scr, i)
 
 # with rasterio.open('rasterio/tests/data/RGB.byte.tif') as src:
 #     transform, width, height = calculate_default_transform(

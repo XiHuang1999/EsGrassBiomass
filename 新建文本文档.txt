@@ -1,0 +1,56 @@
+ # 预处理数据 产生过程文件
+    for yr in range(2000,2020):
+        filelist = glob(
+            dynamicParasD[dynamicPreduceKey[vari]] + os.sep + r'*' + dynamicPreduceKey[vari].upper() + r'*.tif')
+        filelist.sort()
+        print(yr,end=' ==>> ')
+        # 计算8天数据的季节值
+        for seasoni in range(int(len(dynamicPreduceDays)/2)):
+            print(seasoni, end=' ')
+            # 转换闰年天数
+            if yr % 4 != 0:
+                startDay = dynamicPreduceDays[seasoni * 2]
+                endDay = dynamicPreduceDays[seasoni * 2 + 1]
+            else:
+                startDay = dynamicPreduceDays[seasoni * 2] +1
+                endDay = dynamicPreduceDays[seasoni * 2 + 1] +1
+
+            # 将第i天转换为第j个8天
+            start8Day = -(-startDay // 8)    # 第16个8天开始 此处的16开始为1 而非0开始
+            end8Day = -(-endDay // 8)  # 第31个8天结束
+
+            # 根据时间范围处理
+            for vari in range(len(dynamicPreduceKey)):
+
+                eightDaysFilelist = filelist[start8Day-1:end8Day]
+
+                bdays = 8 - startDay % 8 + 1  # 在要处理的8天数据中，第一个8天的天数
+                edays = endDay % 8  # 在要处理的8天数据中，最后一个8天的天数
+
+                # 8天数据处理
+                if dynamicPreduceKey[vari].upper() == r'TAVG':
+                    rasterR, proj, geotrans = EsRaster.RasterMean_8Days(eightDaysFilelist,bdays,edays)
+                else:
+                    rasterR, proj, geotrans = EsRaster.RasterSum_8Days(eightDaysFilelist, bdays, edays)
+
+                # 输出过程栅格
+                outRasterFileName = outPath + os.sep + dynamicPreduceKey[vari].upper() + str(seasoni+1) + os.sep + dynamicPreduceKey[vari].upper()+r'_'+ str(yr) +r'.tif'
+                EsRaster.write_img(outRasterFileName, proj, geotrans, rasterR)
+                del rasterR
+
+            # # 下一次循环变量赋值
+            # start8Day = dynamicPreduceDays[seasoni+1 * 2] // 8   # 第16个8天开始 此处的16开始为1
+            # end8Day = dynamicPreduceDays[seasoni+1 * 2 + 1] // 8  # 第30个8天结束
+
+        # 计算年值
+        for vari in range(len(dynamicPreduceKey)):
+            print(dynamicPreduceKey[vari])
+            # 数据处理
+            if dynamicPreduceKey[vari].upper() == r'TAVG':
+                rasterR, proj, geotrans = EsRaster.RasterMean_8Days(filelist, bdays, edays)
+            else:
+                rasterR, proj, geotrans = EsRaster.RasterSum_8Days(filelist, bdays, edays)
+            # 输出过程栅格
+            outRasterFileName = outPath + os.sep + dynamicPreduceKey[vari].upper() + r'0' + os.sep + \
+                                dynamicPreduceKey[vari].upper() + r'_' + str(yr) + r'.tif'
+            EsRaster.write_img(outRasterFileName, proj, geotrans, rasterR)

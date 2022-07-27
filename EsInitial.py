@@ -8,7 +8,7 @@
 
 import pandas as pd
 import numpy as np
-import os, sys
+import os, sys, time
 from glob import glob
 import openpyxl,os
 
@@ -70,15 +70,19 @@ if __name__=="__main__":
     # 预处理数据 产生过程文件
 
     for yr in range(2000,2020):         # 按年遍历
+        print(yr,end=' ==>> ')
         for vari in dynamicPreduceKey:  # 每年的每个变量
             # 列举tif文件
             filelist = glob(dynamicParasD[vari] + os.sep + r'*' + vari.upper()+ r'*_' + str(yr) + r'*.tif')
             filelist.sort()
-            print(yr,end=' ==>> ')
 
             # 计算8天数据的季节值
             for seasoni in range(int(len(dynamicPreduceDays)/2)):
-                print(seasoni, end=' ')
+                # 输出判断
+                print(str(seasoni), end=' ')
+                outRasterFileName = outPath + os.sep + vari.upper() + str(seasoni+1) + os.sep + vari.upper()+r'_'+ str(yr) +r'.tif'
+                if os.path.exists(outRasterFileName):
+                    continue
                 # 转换闰年天数
                 if yr % 4 != 0:
                     startDay = dynamicPreduceDays[seasoni * 2]
@@ -101,7 +105,6 @@ if __name__=="__main__":
                     rasterR, proj, geotrans = EsRaster.RasterSum_8Days(eightDaysFilelist, bdays, edays)
 
                 # 输出过程栅格
-                outRasterFileName = outPath + os.sep + vari.upper() + str(seasoni+1) + os.sep + vari.upper()+r'_'+ str(yr) +r'.tif'
                 EsRaster.write_img(outRasterFileName, proj, geotrans, rasterR)
                 # del rasterR
                 # # 下一次循环变量赋值
@@ -109,26 +112,37 @@ if __name__=="__main__":
                 # end8Day = dynamicPreduceDays[seasoni+1 * 2 + 1] // 8  # 第30个8天结束
 
             # 计算8天数据的年值
-            print(dynamicPreduceKey[vari])
+            print(vari,end=' ')
+            outRasterFileName = outPath + os.sep + vari.upper() + r'0' + os.sep + \
+                                vari.upper() + r'_' + str(yr) + r'.tif'
+            if os.path.exists(outRasterFileName):
+                continue
             # 数据处理
-            if dynamicPreduceKey[vari].upper() == r'TAVG':
+            bdays = 8
+            if yr % 4 != 0:
+                bdays = 5
+            else:
+                bdays = 6
+            if vari.upper() == r'TAVG':
                 rasterR, proj, geotrans = EsRaster.RasterMean_8Days(filelist, bdays, edays)
             else:
                 rasterR, proj, geotrans = EsRaster.RasterSum_8Days(filelist, bdays, edays)
             # 输出过程栅格
-            outRasterFileName = outPath + os.sep + vari.upper() + r'0' + os.sep + \
-                                vari.upper() + r'_' + str(yr) + r'.tif'
             EsRaster.write_img(outRasterFileName, proj, geotrans, rasterR)
+        print('')
+
     # 并更新数据路径
     try:
         for vari in dynamicPreduceKey:
                 dynamicParasD.pop(vari.lower())
                 for seasoni in range(int(len(dynamicPreduceDays)/2)+1):
-                    dynamicParasD.update({vari+str(seasoni): outPath + os.sep + dynamicPreduceKey[vari].upper() + str(seasoni)})
+                    dynamicParasD.update({vari+str(seasoni): outPath + os.sep + vari.upper() + str(seasoni)})
     except Exception as E_results:
         print('预处理有异常：', E_results)
+        print('\n\n\n我不管，预处理错误,你看着办吧!\nPreProcessing File Direction is ERROR！Please Check it！')
+        time.sleep(100000)
     finally:  # finally的代码是肯定执行的，不管是否有异常,但是finally语块是可选的。
-        print('我不管，预处理错误,你看着办吧!\nPreProcessing File Direction is ERROR！Please Check it！')
+        print('',end='')
 
 
     '''读取站点文件'''
