@@ -346,17 +346,17 @@ if __name__=="__main__":
 
     # GdalReprojectImage(r"G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2001.tif", 0.1,
     #                    r"G:\1_BeiJingUP\AUGB\Data")
-    outPath = r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI'
-    tiflist = glob(r'K:\OuyangXiHuang\AGB\NDVI_董金玮\data\*NDVI*.tif')[0:2]
+    outPath = r"G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\bilinear"
+    tiflist = glob(r'K:\OuyangXiHuang\AGB\NDVI_董金玮\data\*NDVI*.tif')
     # tiflist.sort()
     outtiflist = [outPath+os.sep+os.path.basename(tif).replace(r'max', r'_') for tif in tiflist]
     reftiflist = [r'G:\1_BeiJingUP\AUGB\Data\20220629\TAVG\TAVG_2000001.tif' for i in range(len(tiflist))]
     rsplist = [0.3 for i in range(len(tiflist))]
-    mtdlist = ['near' for i in range(len(tiflist))]
+    mtdlist = ['bilinear' for i in range(len(tiflist))]
 
     print('Start')
     kwgs = list(zip(tiflist,outtiflist,tiflist,rsplist,mtdlist))
-    run_imap_mp(generate_mulcpu_vars_GdalReprojectImage, kwgs, num_processes=1, is_tqdm=True)
+    run_imap_mp(generate_mulcpu_vars_GdalReprojectImage, kwgs, num_processes=11, is_tqdm=True)
     print('Done')
     print()
 

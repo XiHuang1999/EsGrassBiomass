@@ -14,8 +14,7 @@ import openpyxl,os
 
 EsInitialPath = os.getcwd()
 sys.path.append(EsInitialPath)      # 添加函数文件位置
-import EsRaster
-import readConfig
+import EsRaster,readConfig,RF_Algorithm
 
 
 if __name__=="__main__":
@@ -146,17 +145,20 @@ if __name__=="__main__":
 
 
     '''读取站点文件'''
+    # G:\1_BeiJingUP\CommonData\temp\Export_Output_2.shp
     # sitedf = pd.read_csv(exlFile, header=0)
     # Load CSV files and Delete unstable Data
     wb = openpyxl.load_workbook(exlFile)
     sheetList = wb.sheetnames
     allcsv = pd.DataFrame([])
-    for sheet in sheetList[:-19]:
+    for sheet in sheetList[:-2]:
         print(sheet)
         csv = pd.read_excel(exlFile, sheet_name=sheet)
         # print(type(csv.LON[0]))
         csv[r'Year'] = [int(sheet) for y in range(csv.shape[0])]
         allcsv = pd.concat([allcsv, csv])
+        if not pd.api.types.is_numeric_dtype(csv['LON']):
+            print(yr,end='有错')
 
     allcsv1 = allcsv
     allcsv = allcsv[allcsv.AGB < allcsv.AGB.std() * 3 + allcsv.AGB.mean()]
@@ -164,23 +166,35 @@ if __name__=="__main__":
     allcsv = allcsv[(allcsv['LAT'] > 0) & (allcsv['LAT'] <= 53)]
     # allcsv.to_excel(outPath + os.sep + r'Table\All_yrs_Sites.xlsx', index=False)
     # allcsv.to_csv(outPath + os.sep + r'Table\All_yrs_Sites1.csv', index=False)
+    print()
 
+    # '''## Sample ##'''
+    # print(r'Sample : ',end=r'')
+    # allyr = pd.DataFrame([])
+    # for yr in range(2000,2021):
+    #     yrcsv = allcsv[allcsv['Year']==yr]
+    #     print(yr)
+    #     if yrcsv.shape[0]==0:
+    #         print(str(yr)+r'无数据跳过')
+    #         continue
+    #     '''Static raster Sample'''
+    #     stcDf = EsRaster.SampleRaster(staticPath, yrcsv, 'ID')
+    #     yrcsv = pd.concat([yrcsv,stcDf],axis=1,join='outer')
+    #
+    #     '''Dynamic raster sample'''
+    #     dymtif = [dymPath+os.sep+dymKey.upper()[:-1]+r'_'+str(yr)+r'.tif' for dymKey,dymPath in zip(list(dynamicParasD.keys())[1:],list(dynamicParasD.values())[1:])]
+    #     dymDf = EsRaster.SampleRaster(dymtif,yrcsv,'ID')
+    #     yrcsv = pd.concat([yrcsv, dymDf], axis=1, join='outer')
+    #
+    #     '''Merge'''
+    #     allyr = pd.concat([allyr, yrcsv], axis=0, join='outer')
 
-    '''## Sample ##'''
-    allyr = pd.DataFrame([])
-    for yr in range(2000,2021):
-        yrcsv = allcsv[allcsv['Year']==yr]
-        '''Static raster Sample'''
-        stcDf = EsRaster.SampleRaster(staticPath, yrcsv, 'ID')
-        yrcsv = pd.concat([yrcsv,stcDf],axis=1,join='outer')
+    '''Algth Prepare'''
+    Ycols = [i for i in allyr.columns if i not in ['AGB','ID','LON','Year']]    # or Ycols = allyr[allyr.columns.difference(['A', 'B'])]
+    algX = allyr['AGB'].values
+    algY = allyr[Ycols].values
 
-        '''Dynamic raster sample'''
-        dymtif = [dymPath+os.sep+dymKey.upper()[:-1]+r'_'+str(yr)+r'.tif' for dymKey,dymPath in zip(list(dynamicParasD.keys())[1:],list(dynamicParasD.values())[1:])]
-        dymDf = EsRaster.SampleRaster(dymtif,yrcsv,'ID')
-        yrcsv = pd.concat([yrcsv, dymDf], axis=1, join='outer')
-
-        '''Merge'''
-        allyr = pd.concat([allyr, yrcsv], axis=0, join='outer')
+    RF_Algorithm.RFEstimate(algX,algY)
     print('')
     # for sheet in sheetList[:-1]:
 
