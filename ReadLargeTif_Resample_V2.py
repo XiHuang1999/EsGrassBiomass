@@ -290,10 +290,10 @@ def GdalReprojectImage(srcFile, outFile, refFile=r'G:\1_BeiJingUP\AUGB\Data\2022
             'average': gdal.gdalconst.GRA_Average,
             'mode':gdal.gdalconst.GRA_Mode}
 
-    # 获取参考影像投影信息
-    referencefile = gdal.Open(refFile, gdal.GA_ReadOnly)
-    referencefileProj = referencefile.GetProjection()
-    referencefileTrans = referencefile.GetGeoTransform()
+    # # 获取参考影像投影信息
+    # referencefile = gdal.Open(refFile, gdal.GA_ReadOnly)
+    # referencefileProj = referencefile.GetProjection()
+    # referencefileTrans = referencefile.GetGeoTransform()
 
     # 载入原始栅格
     dataset = gdal.Open(srcFile, gdal.GA_ReadOnly)
@@ -328,7 +328,7 @@ def GdalReprojectImage(srcFile, outFile, refFile=r'G:\1_BeiJingUP\AUGB\Data\2022
     geoTransforms[5] = geoTransforms[5]/resampleFactor
     outGeoTransform = tuple(geoTransforms)
     outDataset.SetGeoTransform(outGeoTransform)
-    outDataset.SetProjection(referencefileProj)
+    outDataset.SetProjection(srcProjection)
     for bandIndex in range(1, srcBandCount+1):
         band = outDataset.GetRasterBand(bandIndex)
         band.SetNoDataValue(srcNoDatas[bandIndex-1])
@@ -347,16 +347,16 @@ if __name__=="__main__":
     # GdalReprojectImage(r"G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2001.tif", 0.1,
     #                    r"G:\1_BeiJingUP\AUGB\Data")
     outPath = r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI'
-    tiflist = glob(r'K:\OuyangXiHuang\AGB\NDVI_董金玮\data\*NDVI*.tif')
-    tiflist.sort()
-    outtiflist = [outPath+os.sep+os.path.basename(tif).replace(r'max',r'_') for tif in tiflist]
+    tiflist = glob(r'K:\OuyangXiHuang\AGB\NDVI_董金玮\data\*NDVI*.tif')[0:2]
+    # tiflist.sort()
+    outtiflist = [outPath+os.sep+os.path.basename(tif).replace(r'max', r'_') for tif in tiflist]
     reftiflist = [r'G:\1_BeiJingUP\AUGB\Data\20220629\TAVG\TAVG_2000001.tif' for i in range(len(tiflist))]
     rsplist = [0.3 for i in range(len(tiflist))]
     mtdlist = ['near' for i in range(len(tiflist))]
 
     print('Start')
     kwgs = list(zip(tiflist,outtiflist,tiflist,rsplist,mtdlist))
-    run_imap_mp(generate_mulcpu_vars_GdalReprojectImage, kwgs, num_processes=12, is_tqdm=True)
+    run_imap_mp(generate_mulcpu_vars_GdalReprojectImage, kwgs, num_processes=1, is_tqdm=True)
     print('Done')
     print()
 

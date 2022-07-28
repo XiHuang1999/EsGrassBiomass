@@ -69,7 +69,7 @@ if __name__=="__main__":
 
     # 预处理数据 产生过程文件
 
-    for yr in range(2000,2020):         # 按年遍历
+    for yr in range(2000,2021):         # 按年遍历
         print(yr,end=' ==>> ')
         for vari in dynamicPreduceKey:  # 每年的每个变量
             # 列举tif文件
@@ -181,6 +181,7 @@ if __name__=="__main__":
 
         '''Merge'''
         allyr = pd.concat([allyr, yrcsv], axis=0, join='outer')
+    print('')
     # for sheet in sheetList[:-1]:
 
 
