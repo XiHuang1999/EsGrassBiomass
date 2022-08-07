@@ -12,9 +12,13 @@ import os, sys, time
 from glob import glob
 import openpyxl,os
 
+from sklearn import preprocessing
+import seaborn as sns
+import matplotlib.pyplot as plt
+
 EsInitialPath = os.getcwd()
 sys.path.append(EsInitialPath)      # 添加函数文件位置
-import EsRaster,readConfig,RF_Algorithm
+import EsRaster,readConfig,RF_Algorithm,SVM_Algorithm,Cubist_Algorithm
 
 
 if __name__=="__main__":
@@ -29,8 +33,6 @@ if __name__=="__main__":
         # dynamicPath = list(dynamicParasD.values())   #动态数据文件路径
         exec('dynamicPreduceKey='+dymDayselect['8daysdataname'])    #动态数据中8天数据
         exec('dynamicPreduceDays='+dymDayselect['daysscope'])       #动态数据中选择范围
-
-
     else:
         # ==== Static Paramerters====
         # OutFile Path
@@ -67,68 +69,67 @@ if __name__=="__main__":
                 os.makedirs(outPath + os.sep + dynamicPreduceKey[vari].upper() + str(seasoni))
 
     # 预处理数据 产生过程文件
-
-    for yr in range(2000,2021):         # 按年遍历
-        print(yr,end=' ==>> ')
-        for vari in dynamicPreduceKey:  # 每年的每个变量
-            # 列举tif文件
-            filelist = glob(dynamicParasD[vari] + os.sep + r'*' + vari.upper()+ r'*_' + str(yr) + r'*.tif')
-            filelist.sort()
-
-            # 计算8天数据的季节值
-            for seasoni in range(int(len(dynamicPreduceDays)/2)):
-                # 输出判断
-                print(str(seasoni), end=' ')
-                outRasterFileName = outPath + os.sep + vari.upper() + str(seasoni+1) + os.sep + vari.upper()+r'_'+ str(yr) +r'.tif'
-                if os.path.exists(outRasterFileName):
-                    continue
-                # 转换闰年天数
-                if yr % 4 != 0:
-                    startDay = dynamicPreduceDays[seasoni * 2]
-                    endDay = dynamicPreduceDays[seasoni * 2 + 1]
-                else:
-                    startDay = dynamicPreduceDays[seasoni * 2] +1
-                    endDay = dynamicPreduceDays[seasoni * 2 + 1] +1
-
-                # 将第i天转换为第j个8天 [upper integer]
-                start8Day = -(-startDay // 8)    # 第16个8天开始 此处的16开始为1 而非0开始
-                end8Day = -(-endDay // 8)  # 第31个8天结束
-                bdays = 8 - startDay % 8 + 1  # 在要处理的8天数据中，第一个8天的天数
-                edays = endDay % 8  # 在要处理的8天数据中，最后一个8天的天数
-
-                # 根据时间范围处理 [8天数据处理]
-                eightDaysFilelist = filelist[start8Day-1:end8Day]
-                if vari.upper() == r'TAVG':
-                    rasterR, proj, geotrans = EsRaster.RasterMean_8Days(eightDaysFilelist,bdays,edays)
-                else:
-                    rasterR, proj, geotrans = EsRaster.RasterSum_8Days(eightDaysFilelist, bdays, edays)
-
-                # 输出过程栅格
-                EsRaster.write_img(outRasterFileName, proj, geotrans, rasterR)
-                # del rasterR
-                # # 下一次循环变量赋值
-                # start8Day = dynamicPreduceDays[seasoni+1 * 2] // 8   # 第16个8天开始 此处的16开始为1
-                # end8Day = dynamicPreduceDays[seasoni+1 * 2 + 1] // 8  # 第30个8天结束
-
-            # 计算8天数据的年值
-            print(vari,end=' ')
-            outRasterFileName = outPath + os.sep + vari.upper() + r'0' + os.sep + \
-                                vari.upper() + r'_' + str(yr) + r'.tif'
-            if os.path.exists(outRasterFileName):
-                continue
-            # 数据处理
-            bdays = 8
-            if yr % 4 != 0:
-                bdays = 5
-            else:
-                bdays = 6
-            if vari.upper() == r'TAVG':
-                rasterR, proj, geotrans = EsRaster.RasterMean_8Days(filelist, bdays, edays)
-            else:
-                rasterR, proj, geotrans = EsRaster.RasterSum_8Days(filelist, bdays, edays)
-            # 输出过程栅格
-            EsRaster.write_img(outRasterFileName, proj, geotrans, rasterR)
-        print('')
+    # for yr in range(2000,2021):         # 按年遍历
+    #     print(yr,end=' ==>> ')
+    #     for vari in dynamicPreduceKey:  # 每年的每个变量
+    #         # 列举tif文件
+    #         filelist = glob(dynamicParasD[vari] + os.sep + r'*' + vari.upper()+ r'*_' + str(yr) + r'*.tif')
+    #         filelist.sort()
+    #
+    #         # 计算8天数据的季节值
+    #         for seasoni in range(int(len(dynamicPreduceDays)/2)):
+    #             # 输出判断
+    #             print(str(seasoni), end=' ')
+    #             outRasterFileName = outPath + os.sep + vari.upper() + str(seasoni+1) + os.sep + vari.upper()+r'_'+ str(yr) +r'.tif'
+    #             if os.path.exists(outRasterFileName):
+    #                 continue
+    #             # 转换闰年天数
+    #             if yr % 4 != 0:
+    #                 startDay = dynamicPreduceDays[seasoni * 2]
+    #                 endDay = dynamicPreduceDays[seasoni * 2 + 1]
+    #             else:
+    #                 startDay = dynamicPreduceDays[seasoni * 2] +1
+    #                 endDay = dynamicPreduceDays[seasoni * 2 + 1] +1
+    #
+    #             # 将第i天转换为第j个8天 [upper integer]
+    #             start8Day = -(-startDay // 8)    # 第16个8天开始 此处的16开始为1 而非0开始
+    #             end8Day = -(-endDay // 8)  # 第31个8天结束
+    #             bdays = 8 - startDay % 8 + 1  # 在要处理的8天数据中，第一个8天的天数
+    #             edays = endDay % 8  # 在要处理的8天数据中，最后一个8天的天数
+    #
+    #             # 根据时间范围处理 [8天数据处理]
+    #             eightDaysFilelist = filelist[start8Day-1:end8Day]
+    #             if vari.upper() == r'TAVG':
+    #                 rasterR, proj, geotrans = EsRaster.RasterMean_8Days(eightDaysFilelist,bdays,edays)
+    #             else:
+    #                 rasterR, proj, geotrans = EsRaster.RasterSum_8Days(eightDaysFilelist, bdays, edays)
+    #
+    #             # 输出过程栅格
+    #             EsRaster.write_img(outRasterFileName, proj, geotrans, rasterR)
+    #             # del rasterR
+    #             # # 下一次循环变量赋值
+    #             # start8Day = dynamicPreduceDays[seasoni+1 * 2] // 8   # 第16个8天开始 此处的16开始为1
+    #             # end8Day = dynamicPreduceDays[seasoni+1 * 2 + 1] // 8  # 第30个8天结束
+    #
+    #         # 计算8天数据的年值
+    #         print(vari,end=' ')
+    #         outRasterFileName = outPath + os.sep + vari.upper() + r'0' + os.sep + \
+    #                             vari.upper() + r'_' + str(yr) + r'.tif'
+    #         if os.path.exists(outRasterFileName):
+    #             continue
+    #         # 数据处理
+    #         bdays = 8
+    #         if yr % 4 != 0:
+    #             bdays = 5
+    #         else:
+    #             bdays = 6
+    #         if vari.upper() == r'TAVG':
+    #             rasterR, proj, geotrans = EsRaster.RasterMean_8Days(filelist, bdays, edays)
+    #         else:
+    #             rasterR, proj, geotrans = EsRaster.RasterSum_8Days(filelist, bdays, edays)
+    #         # 输出过程栅格
+    #         EsRaster.write_img(outRasterFileName, proj, geotrans, rasterR)
+    #     print('')
 
     # 并更新数据路径
     try:
@@ -144,30 +145,32 @@ if __name__=="__main__":
         print('',end='')
 
 
-    '''读取站点文件'''
-    # G:\1_BeiJingUP\CommonData\temp\Export_Output_2.shp
-    # sitedf = pd.read_csv(exlFile, header=0)
-    # Load CSV files and Delete unstable Data
-    wb = openpyxl.load_workbook(exlFile)
-    sheetList = wb.sheetnames
-    allcsv = pd.DataFrame([])
-    for sheet in sheetList[:-2]:
-        print(sheet)
-        csv = pd.read_excel(exlFile, sheet_name=sheet)
-        # print(type(csv.LON[0]))
-        csv[r'Year'] = [int(sheet) for y in range(csv.shape[0])]
-        allcsv = pd.concat([allcsv, csv])
-        if not pd.api.types.is_numeric_dtype(csv['LON']):
-            print(yr,end='有错')
-
-    allcsv1 = allcsv
-    allcsv = allcsv[allcsv.AGB < allcsv.AGB.std() * 3 + allcsv.AGB.mean()]
-    allcsv = allcsv[(allcsv['LON'] >= 73) & (allcsv['LON'] <= 135)]
-    allcsv = allcsv[(allcsv['LAT'] > 0) & (allcsv['LAT'] <= 53)]
-    # allcsv.to_excel(outPath + os.sep + r'Table\All_yrs_Sites.xlsx', index=False)
-    # allcsv.to_csv(outPath + os.sep + r'Table\All_yrs_Sites1.csv', index=False)
-    print()
-
+    # '''读取站点文件'''
+    # # G:\1_BeiJingUP\CommonData\temp\Export_Output_2.shp
+    # # sitedf = pd.read_csv(exlFile, header=0)
+    # # Load CSV files and Delete unstable Data
+    # wb = openpyxl.load_workbook(exlFile)
+    # sheetList = wb.sheetnames
+    # allcsv = pd.DataFrame([])
+    # for sheet in sheetList[:-2]:
+    #     print(sheet)
+    #     csv = pd.read_excel(exlFile, sheet_name=sheet)
+    #     # print(type(csv.LON[0]))
+    #     csv[r'Year'] = [int(sheet) for y in range(csv.shape[0])]
+    #     allcsv = pd.concat([allcsv, csv])
+    #     if not pd.api.types.is_numeric_dtype(csv['LON']):
+    #         print(sheet,end='有错')
+    #
+    # allcsv1 = allcsv
+    # # allcsv = allcsv[allcsv.AGB < allcsv.AGB.std() * 3 + allcsv.AGB.mean()]
+    # allcsv = allcsv[allcsv.AGB <= 600]
+    # allcsv = allcsv[allcsv.AGB >= 2]
+    # allcsv = allcsv[(allcsv['LON'] >= 73) & (allcsv['LON'] <= 135)]
+    # allcsv = allcsv[(allcsv['LAT'] > 0) & (allcsv['LAT'] <= 53)]
+    # # allcsv.to_excel(outPath + os.sep + r'Table\All_yrs_Sites.xlsx', index=False)
+    # # allcsv.to_csv(outPath + os.sep + r'Table\All_yrs_Sites1.csv', index=False)
+    # print()
+    #
     # '''## Sample ##'''
     # print(r'Sample : ',end=r'')
     # allyr = pd.DataFrame([])
@@ -182,19 +185,130 @@ if __name__=="__main__":
     #     yrcsv = pd.concat([yrcsv,stcDf],axis=1,join='outer')
     #
     #     '''Dynamic raster sample'''
-    #     dymtif = [dymPath+os.sep+dymKey.upper()[:-1]+r'_'+str(yr)+r'.tif' for dymKey,dymPath in zip(list(dynamicParasD.keys())[1:],list(dynamicParasD.values())[1:])]
+    #     dymtif = [glob(dymPath+os.sep+r'*'+str(yr)+r'*.tif') for dymKey,dymPath in zip(list(dynamicParasD.keys()),list(dynamicParasD.values()))]    # dymPath+os.sep+dymKey.upper()[:-1]+r'_'+str(yr)+r'.tif'
+    #     dymtif = sum(dymtif, [])    # 解决List嵌套
     #     dymDf = EsRaster.SampleRaster(dymtif,yrcsv,'ID')
     #     yrcsv = pd.concat([yrcsv, dymDf], axis=1, join='outer')
     #
     #     '''Merge'''
+    #     yrcsv = yrcsv[(yrcsv[r'FPAR0_FPAR'] > 0) | (yrcsv[r'FPAR1_FPAR'] > 0) | (yrcsv[r'FPAR2_FPAR'] > 0)]
+    #     yrcsv = yrcsv[yrcsv[r'Soil_Clay.tif'] > -9999]
     #     allyr = pd.concat([allyr, yrcsv], axis=0, join='outer')
+    #
+    # # Change allyr
+    # Ycols = ['ID', 'LON', 'LAT', 'AGB', 'Year', 'DEM', 'Parameters_LAT', 'Slope', 'Aspect', 'CGrass', 'Soil_Clay',
+    #          'Soil_CoarseSand', 'Soil_FineSand','Soil_OrganicMass', 'Soil_PH_h2o', 'Soil_PowderedSand', 'NDVI',
+    #          'Yearly_TAVG', 'Season1_TAVG', 'Season2_TAVG',
+    #          'Yearly_PRCP', 'Season1_PRCP', 'Season2_PRCP',
+    #          'Yearly_SWRS', 'Season1_SWRS', 'Season2_SWRS',
+    #          'Yearly_FPAR', 'Season1_FPAR', 'Season2_FPAR']
+    # allyr.columns = Ycols
+    # allyr['NDVI'] = allyr['NDVI']*1.2/255 - 0.2
+    # allyr.to_csv(r"G:\1_BeiJingUP\AUGB\Data\20220629\allyr_SetRange2-600.csv")
+    dynamicParasD['ndvi'] = r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\AfterPreProcess2'
 
     '''Algth Prepare'''
-    Ycols = [i for i in allyr.columns if i not in ['AGB','ID','LON','Year']]    # or Ycols = allyr[allyr.columns.difference(['A', 'B'])]
-    algX = allyr['AGB'].values
-    algY = allyr[Ycols].values
+    # allyr = pd.read_csv(r"G:\1_BeiJingUP\AUGB\Data\20220629\allyr.csv", index_col=0)
+    # allyr = pd.read_csv(r"G:\1_BeiJingUP\AUGB\Data\20220629\allyr_NDVI0-1.csv",index_col=0)
+    allyr = pd.read_csv(r"G:\1_BeiJingUP\AUGB\Data\20220629\allyr_SetRange2-600.csv",index_col=0)
+    allyr = allyr[(allyr[r'Soil_Clay'] > -9999) & (allyr[r'CGrass'] < 100) & (allyr[r'CGrass'] > 0)]
+    allyr = allyr.iloc[:,1:]
 
-    RF_Algorithm.RFEstimate(algX,algY)
+
+    print(allyr.columns)
+    # region zscore标准化
+    # from sklearn import preprocessing
+    # zscore = preprocessing.StandardScaler()
+    # zscore = zscore.fit_transform(allyr)
+    # allyr = pd.DataFrame(zscore, index=allyr.index, columns=allyr.columns)
+    # endregion
+
+
+    Ycols = [i for i in allyr.columns if
+             i not in ['AGB', 'ID', 'LON', 'Parameters_LAT', 'Year']]#,'Soil_Clay.tif', 'Soil_CoarseSand.tif', 'Soil_FineSand.tif','Soil_OrganicMass.tif', 'Soil_PH', 'Soil_PowderedSand.tif', 'Parameters_cgrass']]  # 'Year', or Ycols = allyr[allyr.columns.difference(['A', 'B'])]
+
+    ## Vari describe
+    # # region Description-Heatmap
+    # allvar = allyr[['AGB'] + Ycols]
+    # corr_mat = allvar.corr()
+    # f, ax = plt.subplots(figsize=(16, 12))
+    # mask = np.zeros_like(corr_mat)
+    # for i in range(1, len(mask)):
+    #     for j in range(0, i):
+    #         mask[j][i] = True
+    # sns.heatmap(corr_mat, cmap='PiYG', annot=True, mask=mask, linewidths=.05, square=True, annot_kws={'size': 6.5, 'weight':'bold'}, fmt=".2f")
+    # # print(corr_mat)
+    # plt.subplots_adjust(left=.1, right=0.95, bottom=0.22, top=0.95)
+    # plt.savefig(outPath+os.sep+r'PIC'+os.sep+'Corr_Heatmap.png',dpi=500,bbox_inches='tight')#, transparent=True
+    # plt.show()
+    # # endregion
+    #
+    # # region draw_distribution_histogram
+    # plt.style.use('ggplot')     # 设置绘图风格
+    # plt.rcParams['font.sans-serif'] = ['Microsoft YaHei'] # 处理中文乱码
+    # plt.rcParams['axes.unicode_minus'] = False # 坐标轴负号的处理
+    # # 绘制直方图
+    # # 绘制直方图
+    # plt.hist(x=allvar.AGB,  # 指定绘图数据
+    #          bins=42,  # 指定直方图中条块的个数
+    #          color='steelblue',  # 指定直方图的填充色
+    #          edgecolor='black'  # 指定直方图的边框色
+    #          )
+    # # allvar.AGB.plot(kind='hist', bins=60, color='steelblue', edgecolor='black', density=True, label='Frequency Histogram')
+    # # # 绘制核密度图
+    # # allvar.AGB.plot(kind='kde', color='red', label='Density')
+    # plt.xlim(0, max(allvar.AGB))            # 轴范围
+    # # plt.ylim(y1, y2)
+    # plt.xlabel('AGB Value')     # 添加x轴和y轴标签
+    # plt.ylabel('Frequency')
+    # plt.title('AGB频数分布')      # 添加标题
+    # # plt.legend()                # 显示图例
+    # plt.savefig(outPath + os.sep + r'PIC' + os.sep + 'Distribution_hist.png', dpi=500, bbox_inches='tight')  # , transparent=True
+    # plt.show()
+    # print('')
+    # # endregion
+
+    algY = allyr['AGB'].values
+    algX = allyr[Ycols].values
+
+    # region 归一化处理
+    # algX = pd.DataFrame(algX)
+    # algX = algX.apply(lambda x: (x - np.min(x)) / (np.max(x) - np.min(x)))
+    # algX = algX.values
+    # endregion
+
+    print(Ycols)
+
+    # # region RF
+    # RF_Algorithm.RFEstimate(algX, algY, [staticPath, dynamicParasD], 0.9 )
+    # # for i in range(1,24):
+    # #     para = {'n_estimators': 566, 'max_features': i, 'bootstrap': True}
+    # #     RF_Algorithm.RFEstimate(algX,algY,[staticPath,dynamicParasD],0.9,para,)
+    # # endregion
+
+    # region SVM
+
+    # region zscore标准化
+    # from sklearn import preprocessing
+    # zscore = preprocessing.StandardScaler()
+    # zscore = zscore.fit_transform(allyr)
+    # allyr = pd.DataFrame(zscore, index=allyr.index, columns=allyr.columns)
+    # endregion
+
+    # SVM_Algorithm.SVMEstimate(algX, algY, [staticPath, dynamicParasD], 0.9)
+    # endregion
+
+
+    # # Cubist
+    # region zscore标准化
+    # from sklearn import preprocessing
+    # zscore = preprocessing.StandardScaler()
+    # zscore = zscore.fit_transform(allyr)
+    # allyr = pd.DataFrame(zscore, index=allyr.index, columns=allyr.columns)
+    # endregion
+
+    Cubist_Algorithm.CBEstimate(algX, algY, [staticPath, dynamicParasD], 0.9)
+
     print('')
     # for sheet in sheetList[:-1]:
 
