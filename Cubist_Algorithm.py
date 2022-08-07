@@ -59,6 +59,8 @@ def CBEstimate(X,
     t1 = time()
 
     # 将数据分为训练样本和验证样本
+    X = pd.DataFrame(X)
+    Y = pd.Series(Y)
     X_train, X_test, y_train, y_test = train_test_split(X,
                                                         Y,
                                                         test_size=1-train_size,
@@ -66,7 +68,7 @@ def CBEstimate(X,
     # regressor = RandomForestRegressor()
     # RF_kwargs = {'n_estimators': 561, 'max_features': 5, 'bootstrap': True}#{'n_estimators': 538, 'max_leaf_nodes': 10, 'max_features': 19, 'bootstrap': True}#
                 # {'n_estimators': 589, 'max_features': 7, 'bootstrap': True}
-    regressor = Cubist(composite='auto',cv=5)
+    regressor = Cubist()
 
     # # Parameters before
     # regressor.fit(X_train, y_train)
@@ -77,9 +79,10 @@ def CBEstimate(X,
     # # Parameters 1
     param_distribs = {
         # 均匀离散随机变量
-        'n_rules ': [int(x) for x in np.linspace(start=400, stop=600, num=80)],
+        'n_rules': [int(x) for x in np.linspace(start=400, stop=600, num=80)],
         'n_committees': [int(x) for x in np.linspace(start=1, stop=20, num=20)],  # 寻找最佳分割时要考虑的特征数量
-        'neighbors ': [int(x) for x in np.linspace(start=1,stop=9,num=9)]
+        'neighbors': [int(x) for x in np.linspace(start=1,stop=9,num=9)],
+        'composite': [True]
     }
     regressor = RandomizedSearchCV(regressor, param_distributions=param_distribs,
                                   n_iter=5000, cv=5, n_jobs=-1, scoring='neg_mean_squared_error')

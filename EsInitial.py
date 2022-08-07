@@ -307,7 +307,7 @@ if __name__=="__main__":
     # allyr = pd.DataFrame(zscore, index=allyr.index, columns=allyr.columns)
     # endregion
 
-    Cubist_Algorithm.CBEstimate(algX, algY, [staticPath, dynamicParasD], 0.9)
+    Cubist_Algorithm.CBEstimate(allyr[Ycols], allyr['AGB'], [staticPath, dynamicParasD], 0.9)
 
     print('')
     # for sheet in sheetList[:-1]:
