@@ -35,7 +35,7 @@ import EsRaster,readConfig,RF_Algorithm
 def CBEstimate(X,
                Y,
                para_Output,
-               train_size=0.9,RF_kwargs={'n_rules ': 500, 'n_committees ': 7, 'bootstrap': True}
+               train_size=0.9,CB_kwargs={'neighbors': 9, 'n_rules': 465, 'n_committees': 16, 'composite': True}
                             # 树的棵树，默认是100     # 寻找最佳分割时要考虑的特征数量
                           #'max_depth':None,
                           #'random_state':None, # 控制构建树时样本的随机抽样
@@ -44,14 +44,15 @@ def CBEstimate(X,
                           # 'max_features':2,         # 寻找最佳分割时要考虑的特征数量
                           # 'min_samples_leaf':3,   # 在叶节点处需要的最小样本数
                           # 'min_samples_split':5  # 拆分内部节点所需的最少样本数
-               # {'n_estimators': 561, 'max_features': 5, 'bootstrap': True}
-                # {'n_estimators': 589, 'max_features': 7, 'bootstrap': True}
+               # {'neighbors': 9, 'n_rules': 465, 'n_committees': 16, 'composite': True}
                 ):
     '''
-    使用随机森林预测地上生物量
-    :param X: 自变量,X = dataset.iloc[:, 0:4].values
-    :param Y: 因变量,y = dataset.iloc[:, 4].values
-    :param test_size: float,训练样本
+    使用Cubist预测地上生物量
+    :param X: 自变量,X = dataset.iloc[:, 1:end]
+    :param Y: 因变量,y = dataset.iloc[:, 0]
+    :param para_Output: list,[staticDataPath,dynamicDataPath]
+    :param train_size: float,训练样本
+    :param RF_kwargs: dict,Parameters of RF
     :return:
     '''
 
@@ -68,7 +69,7 @@ def CBEstimate(X,
     # regressor = RandomForestRegressor()
     # RF_kwargs = {'n_estimators': 561, 'max_features': 5, 'bootstrap': True}#{'n_estimators': 538, 'max_leaf_nodes': 10, 'max_features': 19, 'bootstrap': True}#
                 # {'n_estimators': 589, 'max_features': 7, 'bootstrap': True}
-    regressor = Cubist()
+    regressor = Cubist(**CB_kwargs)
 
     # # Parameters before
     # regressor.fit(X_train, y_train)
@@ -76,16 +77,16 @@ def CBEstimate(X,
     # score = explained_variance_score(y_test, outResults1)
     # print(score)  # 得到预测结果区间[0,1]
 
-    # # Parameters 1
-    param_distribs = {
-        # 均匀离散随机变量
-        'n_rules': [int(x) for x in np.linspace(start=400, stop=600, num=80)],
-        'n_committees': [int(x) for x in np.linspace(start=1, stop=20, num=20)],  # 寻找最佳分割时要考虑的特征数量
-        'neighbors': [int(x) for x in np.linspace(start=1,stop=9,num=9)],
-        'composite': [True]
-    }
-    regressor = RandomizedSearchCV(regressor, param_distributions=param_distribs,
-                                  n_iter=5000, cv=5, n_jobs=-1, scoring='neg_mean_squared_error')
+    # # # Parameters 1
+    # param_distribs = {
+    #     # 均匀离散随机变量
+    #     'n_rules': [int(x) for x in np.linspace(start=400, stop=600, num=80)],
+    #     'n_committees': [int(x) for x in np.linspace(start=1, stop=20, num=20)],  # 寻找最佳分割时要考虑的特征数量
+    #     'neighbors': [int(x) for x in np.linspace(start=1,stop=9,num=9)],
+    #     'composite': [True]
+    # }
+    # regressor = RandomizedSearchCV(regressor, param_distributions=param_distribs,
+    #                               n_iter=5000, cv=5, n_jobs=-1, scoring='neg_mean_squared_error')
 
     # # # Parameters 2
     # param_distribs = {
@@ -112,8 +113,8 @@ def CBEstimate(X,
     print('Test score:%.4f' % score,end=' / ')  # 得到预测结果区间[0,1]
 
     outResults = regressor.predict(X)
-    # plt.scatter(Y, outResults)
-    # plt.show()
+    plt.scatter(Y, outResults)
+    plt.show()
     score = explained_variance_score(Y, outResults)
     print('Allset score:%.4f' % score,end=' / ')  # 得到预测结果区间[0,1]
 
@@ -127,7 +128,7 @@ def CBEstimate(X,
     # importances = regressor.feature_importances_
     #
     # read and predict
-    for yr in range(2017,2018):
+    for yr in range(2000,2021):
         print(yr)
         '''Data Tif List'''
         # staticPath
@@ -141,18 +142,22 @@ def CBEstimate(X,
         xid = dataDf[(dataDf.iloc[:, 3] > -1) & (dataDf.iloc[:, 4] > 0) & (dataDf.iloc[:, 4] < 100) & (dataDf.iloc[:, 5] > -9999) & (dataDf.iloc[:, 11] >= 0) & (dataDf.iloc[:, 12] > -9999) & (dataDf.iloc[:, 23] > 0)].index.tolist()
         indf = dataDf.iloc[xid, :]
         indf = np.array_split(indf,200)
+        for i in range(0,200):
+            indf[i].columns = X.columns
+
         estimators = [regressor for i in range(200)]
 
         '''Predict'''
         kwgs = list(zip(estimators, indf))
-        outResults_ = EsRaster.run_imap_mp(EsRaster.generate_mulcpu_vars,kwgs,num_processes=20, is_tqdm=True)
+        outResults_ = EsRaster.run_imap_mp(EsRaster.generate_mulcpu_vars_Predict,kwgs,num_processes=30, is_tqdm=True)
         outResults_ = np.hstack(tuple(outResults_))
-        outResults_ = outResults_.reshape([-1, 1])
+        outResults_ = outResults_.reshape([len(xid), 1])
         outdat = np.zeros((4998 * 4088, 1)) - 9999
         outdat[xid] = outResults_
         outdat = outdat.reshape(4088,4998)
 
-        EsRaster.write_img(r"G:\1_BeiJingUP\AUGB\Data\20220629\Results\RF_AGB"+os.sep+r'RF_AGB_'+str(yr)+r'.tif', im_proj, im_geotrans, outdat)
+        EsRaster.write_img(r"G:\1_BeiJingUP\AUGB\Data\20220629\Results\CB_AGB"+os.sep+r'CB_AGB_'+str(yr)+r'.tif', im_proj, im_geotrans, outdat)
     print()
 
     return
+

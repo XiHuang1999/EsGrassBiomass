@@ -483,7 +483,30 @@ def ResampleLargeRaster(tif=r'G:\1_BeiJingUP\AUGB\Data\20220629\NDVI\NDVImax2015
 
     return results,kwargs
 
-def generate_mulcpu_vars(args):
+
+
+def generate_mulcpu_vars_Predict(args):
+    '''
+    并行多参数调用
+    :param args: 读入了两个变量，需要计算的wins下标，以及Manager Namespace
+    :return:
+    '''
+    return predict_Block(args[0],args[1])
+
+
+def predict_Block(est,dataX):
+    '''
+    Predict by block
+    :param est: obj, estimator
+    :param dataX: ndarray, X var after np.split(a, 2, axis=1)
+    :return: estimator result
+    '''
+    r = est.predict(dataX)
+    return r
+
+
+
+def generate_mulcpu_vars_BlockReadAndSample(args):
     '''
     并行多参数调用
     :param args: 读入了两个变量，需要计算的wins下标，以及Manager Namespace
@@ -603,6 +626,7 @@ def GdalReprojectImage(srcFile, outFile, refFile=r'G:\1_BeiJingUP\AUGB\Data\2022
         0.0, 0.0,           # 容差参数,容差参数,回调函数
     )
     return 0
+
 
 def read_tifList(tifs):
     '''

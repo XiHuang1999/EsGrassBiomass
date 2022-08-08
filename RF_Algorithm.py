@@ -48,12 +48,13 @@ def RFEstimate(X,
                 ):
     '''
     使用随机森林预测地上生物量
-    :param X: 自变量,X = dataset.iloc[:, 0:4].values
-    :param Y: 因变量,y = dataset.iloc[:, 4].values
-    :param test_size: float,训练样本
+    :param X: 自变量,X = dataset.iloc[:, 1:end].values
+    :param Y: 因变量,y = dataset.iloc[:, 0].values
+    :param para_Output: list,[staticDataPath,dynamicDataPath]
+    :param train_size: float,训练样本
+    :param RF_kwargs: dict,Parameters of RF
     :return:
     '''
-
     print(r"Start RF Predict AGB:")
     t1 = time()
 
@@ -145,7 +146,7 @@ def RFEstimate(X,
 
         '''Predict'''
         kwgs = list(zip(estimators, indf))
-        outResults_ = run_imap_mp(generate_mulcpu_vars,kwgs,num_processes=20, is_tqdm=True)
+        outResults_ = run_imap_mp(EsRaster.generate_mulcpu_vars_Predict,kwgs,num_processes=20, is_tqdm=True)
         outResults_ = np.hstack(tuple(outResults_))
         outResults_ = outResults_.reshape([-1, 1])
         outdat = np.zeros((4998 * 4088, 1)) - 9999
