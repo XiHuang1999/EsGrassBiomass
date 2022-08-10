@@ -18,6 +18,7 @@ from time import time
 import multiprocessing
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from scipy.stats import gaussian_kde
 import scipy.stats as st
 from cubist import Cubist
 from six import StringIO
@@ -36,14 +37,7 @@ def CBEstimate(X,
                Y,
                para_Output,
                train_size=0.9,CB_kwargs={'neighbors': 9, 'n_rules': 465, 'n_committees': 16, 'composite': True}
-                            # 树的棵树，默认是100     # 寻找最佳分割时要考虑的特征数量
-                          #'max_depth':None,
-                          #'random_state':None, # 控制构建树时样本的随机抽样
-                          # 'bootstrap':True,   # 建立树木时是否使用bootstrap抽样
-                          # 'max_depth':10,          # 树的最大深度
-                          # 'max_features':2,         # 寻找最佳分割时要考虑的特征数量
-                          # 'min_samples_leaf':3,   # 在叶节点处需要的最小样本数
-                          # 'min_samples_split':5  # 拆分内部节点所需的最少样本数
+
                # {'neighbors': 9, 'n_rules': 465, 'n_committees': 16, 'composite': True}
                 ):
     '''
@@ -52,10 +46,9 @@ def CBEstimate(X,
     :param Y: 因变量,y = dataset.iloc[:, 0]
     :param para_Output: list,[staticDataPath,dynamicDataPath]
     :param train_size: float,训练样本
-    :param RF_kwargs: dict,Parameters of RF
+    :param CB_kwargs: dict,Parameters of RF
     :return:
     '''
-
     print(r"Start Cubist Predict AGB:")
     t1 = time()
 
@@ -120,43 +113,108 @@ def CBEstimate(X,
 
     print('Time Using:%.2f min' % ((time()-t1)/60),end=' / ')
 
+
+    # # region Drawing
+    # xy = np.vstack([Y, outResults])
+    # z = gaussian_kde(xy)(xy)
+    # idx = z.argsort()
+    # linreg = st.linregress(pd.Series(Y, dtype=np.float64), pd.Series(outResults, dtype=np.float64))
+    # pltx = [int(x) for x in np.linspace(start=0, stop=max(Y), num=1000)]
+    # plty = [linreg.slope * x + linreg.intercept for x in pltx]
+    # f, ax = plt.subplots(figsize=(6, 6))
+    # plt.plot(pltx, plty, '-', color='red', alpha=0.8, linewidth=2, label='Fitting Line')    # color='#4169E1'
+    # plt.plot(pltx, pltx, '-', color='black', alpha=0.8, linewidth=2, label='1:1')
+    # plt.scatter(Y, outResults,c=z,s=1.3,cmap='Spectral')
+    # plt.text(400,235,r'y = '+str('%.2f' % linreg.slope)+r'*x + '+str('%.2f' % linreg.intercept)+
+    #          '\n'+r'R Square = '+str('%.2f' % (linreg.rvalue**2))+
+    #          '\n'+r'P Value = '+str('%.2f' % linreg.pvalue)
+    #          ,fontsize=8,color = "r",fontweight='bold')
+    # plt.subplots_adjust(left=.1, right=0.95, bottom=0.22, top=0.95)
+    # plt.xlabel('AGB Site Value')  # 添加x轴和y轴标签
+    # plt.ylabel('Model Value')
+    # plt.savefig(r'G:\1_BeiJingUP\AUGB\Data\20220629\Results'+os.sep+r'PIC'+os.sep+'CB_results.png',dpi=500,bbox_inches='tight')#, transparent=True
+    # plt.show()
+    # # endregion
+
+
     # print(regressor.get_params().values())
     # print(regressor.best_params_,end='\n\n')
     # print(regressor.best_estimator_)
 
     # Out PIC
     # importances = regressor.feature_importances_
-    #
+
     # read and predict
+    # read and predict
+    para_Output[0]=[r'G:\1_BeiJingUP\AUGB\Data\20220629\Parameters\LAT_China1km.tif',
+                    r'G:\1_BeiJingUP\AUGB\Data\20220629\Parameters\dem_china1km.tif',
+                     r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\Clay.tif',
+                     r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\CoarseSand.tif',
+                     r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\FineSand.tif',
+                     r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\OrganicMass.tif',
+                     r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\PowderedSand.tif']
     for yr in range(2000,2021):
+        # print(yr)
+        # '''Data Tif List'''
+        # # staticPath
+        # dymtif = [glob(dymPath+os.sep+r'*'+str(yr)+r'*.tif') for dymKey,dymPath in zip(list(para_Output[1].keys()),list(para_Output[1].values()))]    # dymPath+os.sep+dymKey.upper()[:-1]+r'_'+str(yr)+r'.tif'
+        # dymtif = sum(dymtif, [])    # 解决List嵌套
+        #
+        # yrTifList = para_Output[0]+dymtif
+        # dataDf, im_proj, im_geotrans = EsRaster.read_tifList(yrTifList)
+        #
+        # # Block split
+        # xid = dataDf[(dataDf.iloc[:, 3] > -1) & (dataDf.iloc[:, 4] > 0) & (dataDf.iloc[:, 4] < 100) & (dataDf.iloc[:, 5] > -9999) & (dataDf.iloc[:, 11] >= 0) & (dataDf.iloc[:, 12] > -9999) & (dataDf.iloc[:, 23] > 0)].index.tolist()
+        # indf = dataDf.iloc[xid, :]
+        # indf = np.array_split(indf,200)
+        # for i in range(0,200):
+        #     indf[i].columns = X.columns
+        #
+        # estimators = [regressor for i in range(200)]
+        #
+        # '''Predict'''
+        # kwgs = list(zip(estimators, indf))
+        # outResults_ = EsRaster.run_imap_mp(EsRaster.generate_mulcpu_vars_Predict,kwgs,num_processes=30, is_tqdm=True)
+        # outResults_ = np.hstack(tuple(outResults_))
+        # outResults_ = outResults_.reshape([len(xid), 1])
+        # outdat = np.zeros((4998 * 4088, 1)) - 9999
+        # outdat[xid] = outResults_
+        # outdat = outdat.reshape(4088,4998)
+
         print(yr)
         '''Data Tif List'''
         # staticPath
-        dymtif = [glob(dymPath+os.sep+r'*'+str(yr)+r'*.tif') for dymKey,dymPath in zip(list(para_Output[1].keys()),list(para_Output[1].values()))]    # dymPath+os.sep+dymKey.upper()[:-1]+r'_'+str(yr)+r'.tif'
-        dymtif = sum(dymtif, [])    # 解决List嵌套
-
-        yrTifList = para_Output[0]+dymtif
+        dymtif = [glob(dymPath + os.sep + r'*' + str(yr) + r'*.tif') for dymKey, dymPath in
+                  zip(list(para_Output[1].keys()),
+                      list(para_Output[1].values()))]  # dymPath+os.sep+dymKey.upper()[:-1]+r'_'+str(yr)+r'.tif'
+        dymtif = sum(dymtif, [])  # 解决List嵌套
+        yrTifList = para_Output[0] + dymtif
         dataDf, im_proj, im_geotrans = EsRaster.read_tifList(yrTifList)
 
         # Block split
-        xid = dataDf[(dataDf.iloc[:, 3] > -1) & (dataDf.iloc[:, 4] > 0) & (dataDf.iloc[:, 4] < 100) & (dataDf.iloc[:, 5] > -9999) & (dataDf.iloc[:, 11] >= 0) & (dataDf.iloc[:, 12] > -9999) & (dataDf.iloc[:, 23] > 0)].index.tolist()
+        # # clay>-1        0<cgrass<100      NDVI>=0              prcp>-9999               fpar>0
+        # xid = dataDf[(dataDf.iloc[:, 3] > -1) & (dataDf.iloc[:, 2] > 0) & (dataDf.iloc[:, 2] < 100) & (dataDf.iloc[:, 5] > -9999) & (dataDf.iloc[:, 8] >= 0) & (dataDf.iloc[:, 12] > -9999) & (dataDf.iloc[:, 18] > 0)].index.tolist()
+        # clay>-1        0<cgrass<100      NDVI>=0              prcp>-9999               fpar>0
+        xid = dataDf[(dataDf.iloc[:, 2] > -1) & (dataDf.iloc[:, 3] > -9999) & (dataDf.iloc[:, 7] >= 0) & (
+                    dataDf.iloc[:, 12] > -9999) & (dataDf.iloc[:, 18] > 0)].index.tolist()
         indf = dataDf.iloc[xid, :]
-        indf = np.array_split(indf,200)
+        indf.columns = X.columns  # [X_columns[0]] + X_columns[2:]
+        # indf = indf.reindex(columns=X_columns, fill_value=yr)
+        indf = np.array_split(indf, 200)
         for i in range(0,200):
             indf[i].columns = X.columns
-
         estimators = [regressor for i in range(200)]
 
         '''Predict'''
         kwgs = list(zip(estimators, indf))
-        outResults_ = EsRaster.run_imap_mp(EsRaster.generate_mulcpu_vars_Predict,kwgs,num_processes=30, is_tqdm=True)
+        outResults_ = EsRaster.run_imap_mp(EsRaster.generate_mulcpu_vars_Predict, kwgs, num_processes=20, is_tqdm=True)
         outResults_ = np.hstack(tuple(outResults_))
-        outResults_ = outResults_.reshape([len(xid), 1])
+        outResults_ = outResults_.reshape([-1, 1])
         outdat = np.zeros((4998 * 4088, 1)) - 9999
         outdat[xid] = outResults_
-        outdat = outdat.reshape(4088,4998)
+        outdat = outdat.reshape(4088, 4998)
 
-        EsRaster.write_img(r"G:\1_BeiJingUP\AUGB\Data\20220629\Results\CB_AGB"+os.sep+r'CB_AGB_'+str(yr)+r'.tif', im_proj, im_geotrans, outdat)
+        EsRaster.write_img(r"G:\1_BeiJingUP\AUGB\Data\20220629\Results\CB_AGB_4"+os.sep+r'CB_AGB_'+str(yr)+r'.tif', im_proj, im_geotrans, outdat)
     print()
 
     return

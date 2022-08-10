@@ -18,6 +18,7 @@ from time import time
 import multiprocessing
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from scipy.stats import gaussian_kde
 import scipy.stats as st
 
 from six import StringIO
@@ -58,13 +59,20 @@ def RFEstimate(X,
     print(r"Start RF Predict AGB:")
     t1 = time()
 
+    X_columns = list(X.columns)
+    X = np.array(X)
+    Y = np.array(Y)
+
     # 将数据分为训练样本和验证样本
     X_train, X_test, y_train, y_test = train_test_split(X,
                                                         Y,
                                                         test_size=1-train_size,
                                                         random_state=0)
     # regressor = RandomForestRegressor()
-    # RF_kwargs = {'n_estimators': 561, 'max_features': 5, 'bootstrap': True}#{'n_estimators': 538, 'max_leaf_nodes': 10, 'max_features': 19, 'bootstrap': True}#
+    RF_kwargs = {'n_estimators': 699, 'max_features': 7, 'bootstrap': True,'min_samples_split':4 ,'oob_score':True,'max_samples':0.985}
+    # RF_kwargs = {'n_estimators': 566, 'max_features': 16, 'bootstrap': True}
+    # RF_kwargs = {'n_estimators': 561, 'max_features': 5, 'bootstrap': True}
+    # #{'n_estimators': 538, 'max_leaf_nodes': 10, 'max_features': 19, 'bootstrap': True}#
                 # {'n_estimators': 589, 'max_features': 7, 'bootstrap': True}
     regressor = RandomForestRegressor(**RF_kwargs)
 
@@ -77,7 +85,7 @@ def RFEstimate(X,
     # # Parameters 1
     # param_distribs = {
     #     # 均匀离散随机变量
-    #     'n_estimators': [int(x) for x in np.linspace(start=500, stop=600, num=60)],
+    #     'n_estimators': [int(x) for x in np.linspace(start=480, stop=600, num=100)],
     #     'max_features': [int(x) for x in np.linspace(start=1, stop=20, num=20)],  # 寻找最佳分割时要考虑的特征数量
     #     'max_leaf_nodes': [int(x) for x in np.linspace(start=2,stop=10,num=8)],
     #     #'max_depth': [int(x) for x in np.linspace(start=1,stop=20,num=20)],           # 树的最大深度
@@ -86,7 +94,7 @@ def RFEstimate(X,
     #     "bootstrap": [True, False]
     # }
     # regressor = RandomizedSearchCV(regressor, param_distributions=param_distribs,
-    #                               n_iter=16000, cv=5, n_jobs=-1, scoring='neg_mean_squared_error')
+    #                               n_iter=31500, cv=5, n_jobs=-1, scoring='neg_mean_squared_error')
 
     # # # Parameters 2
     # param_distribs = {
@@ -113,12 +121,92 @@ def RFEstimate(X,
     print('Test score:%.4f' % score,end=' / ')  # 得到预测结果区间[0,1]
 
     outResults = regressor.predict(X)
-    # plt.scatter(Y, outResults)
-    # plt.show()
     score = explained_variance_score(Y, outResults)
     print('Allset score:%.4f' % score,end=' / ')  # 得到预测结果区间[0,1]
 
+
+    outResults1 = regressor.predict(X_train)
+    linreg = st.linregress(pd.Series(y_train, dtype=np.float64), pd.Series(outResults1, dtype=np.float64))
+    print('Training score:%.4f' % linreg.rvalue**2,end=' / ')  # 得到预测结果区间[0,1]
+
+    outResults2 = regressor.predict(X_test)
+    linreg = st.linregress(pd.Series(y_test, dtype=np.float64), pd.Series(outResults2, dtype=np.float64))
+    print('Testing score:%.4f' % linreg.rvalue ** 2, end=' / ')  # 得到预测结果区间[0,1]
+
+    outResults = regressor.predict(X)
+    linreg = st.linregress(pd.Series(Y, dtype=np.float64), pd.Series(outResults, dtype=np.float64))
+    print('Allsite score:%.4f' % linreg.rvalue ** 2, end=' / ')  # 得到预测结果区间[0,1]
+
+
+    # region Drawing
+    # xy = np.vstack([Y, outResults])
+    # z = gaussian_kde(xy)(xy)
+    # idx = z.argsort()
+    # linreg = st.linregress(pd.Series(Y, dtype=np.float64), pd.Series(outResults, dtype=np.float64))
+    # pltx = [int(x) for x in np.linspace(start=0, stop=max(Y), num=1000)]
+    # plty = [linreg.slope * x + linreg.intercept for x in pltx]
+    # f, ax = plt.subplots(figsize=(6, 6))
+    # plt.plot(pltx, plty, '-', color='red', alpha=0.8, linewidth=2, label='Fitting Line')    # color='#4169E1'
+    # plt.plot(pltx, pltx, '-', color='black', alpha=0.8, linewidth=2, label='1:1')
+    # plt.scatter(Y, outResults,c=z,s=1.3,cmap='Spectral')
+    # plt.text(400,235,r'y = '+str('%.2f' % linreg.slope)+r'*x + '+str('%.2f' % linreg.intercept)+
+    #          '\n'+r'R Square = '+str('%.2f' % (linreg.rvalue**2))+
+    #          '\n'+r'P Value = '+str('%.2f' % linreg.pvalue)
+    #          ,fontsize=8,color = "r",fontweight='bold')
+    # plt.subplots_adjust(left=.1, right=0.95, bottom=0.22, top=0.95)
+    # plt.xlabel('AGB Site Value')  # 添加x轴和y轴标签
+    # plt.ylabel('Model Value')
+    # # plt.savefig(r'G:\1_BeiJingUP\AUGB\Data\20220629\Results'+os.sep+r'PIC'+os.sep+'RF_results.png',dpi=500,bbox_inches='tight')#, transparent=True
+    # plt.show()
+
+    # xy = np.vstack([y_train, outResults1])
+    # z = gaussian_kde(xy)(xy)
+    # idx = z.argsort()
+    # linreg = st.linregress(pd.Series(Y, dtype=np.float64), pd.Series(outResults, dtype=np.float64))
+    # pltx = [int(x) for x in np.linspace(start=0, stop=max(Y), num=1000)]
+    # plty = [linreg.slope * x + linreg.intercept for x in pltx]
+    # f, ax = plt.subplots(figsize=(6, 6))
+    # plt.scatter(y_train, outResults1, c=z, s=1.8,cmap='Spectral', label='Training')
+    # plt.scatter(y_test, outResults2, s=1, c='Black', label='Validation')
+    # plt.plot(pltx, plty, '-', color='red', alpha=0.8, linewidth=2, label='Fitting Line')    # color='#4169E1'
+    # plt.plot(pltx, pltx, '--', color='black', alpha=0.8, linewidth=2, label='1:1')
+    # plt.text(290,200,r'y = '+str('%.2f' % linreg.slope)+r'*x + '+str('%.2f' % linreg.intercept)+
+    #          '\n'+r'R Square = '+str('%.2f' % (linreg.rvalue**2))+
+    #          '\n'+r'P Value = '+str('%.2f' % linreg.pvalue)
+    #          ,fontsize=8,color = "r",fontweight='bold')
+    # plt.subplots_adjust(left=.1, right=0.95, bottom=0.22, top=0.95)
+    # plt.xlabel('Observed AGB')  # 添加x轴和y轴标签
+    # plt.ylabel('Estimated AGB')
+    # plt.legend()
+    # plt.savefig(r'G:\1_BeiJingUP\AUGB\Data\20220629\Results'+os.sep+r'PIC'+os.sep+'RF4_results.png',dpi=500,bbox_inches='tight')#, transparent=True
+    # plt.show()
+
+    # xy = np.vstack([y_train, outResults1])
+    # z = gaussian_kde(xy)(xy)
+    # idx = z.argsort()
+    # linreg = st.linregress(pd.Series(y_train, dtype=np.float64), pd.Series(outResults1, dtype=np.float64))
+    # pltx = [x for x in np.linspace(start=0, stop=max(y_train), num=1000)]
+    # plty = [linreg.slope * x + linreg.intercept for x in pltx]
+    # f, ax = plt.subplots(figsize=(6, 6))
+    # plt.plot(pltx, plty, '-', color='red', alpha=0.8, linewidth=2, label='Fitting Line')    # color='#4169E1'
+    # plt.plot(pltx, pltx, '-', color='black', alpha=0.8, linewidth=2, label='1:1')
+    # plt.scatter(y_train, outResults1,c=z,s=1.3,cmap='Spectral')
+    # plt.text(400,235,r'y = '+str('%.2f' % linreg.slope)+r'*x + '+str('%.2f' % linreg.intercept)+
+    #          '\n'+r'R Square = '+str('%.2f' % (linreg.rvalue**2))+
+    #          '\n'+r'P Value = '+str('%.2f' % linreg.pvalue)
+    #          ,fontsize=8,color = "r",fontweight='bold')
+    # plt.subplots_adjust(left=.1, right=0.95, bottom=0.22, top=0.95)
+    # plt.xlabel('AGB Site Value')  # 添加x轴和y轴标签
+    # plt.ylabel('Model Value')
+    # # plt.savefig(r'G:\1_BeiJingUP\AUGB\Data\20220629\Results'+os.sep+r'PIC'+os.sep+'RF_results.png',dpi=500,bbox_inches='tight')#, transparent=True
+    # plt.show()
+    # endregion
+
     print('Time Using:%.2f min' % ((time()-t1)/60),end=' / ')
+
+    # did = np.where((xy[0,:]>192.7)&(xy[1,:]<145.3))
+    # did = np.where((xy[0,:]>265)&(xy[1,:]<185))
+    # did = np.where((xy[0,:]<32)&(xy[1,:]>170))
 
     # print(regressor.get_params().values())
     # print(regressor.best_params_,end='\n\n')
@@ -126,21 +214,33 @@ def RFEstimate(X,
 
     # Out PIC
     # importances = regressor.feature_importances_
-    #
+
     # read and predict
-    for yr in range(2017,2018):
+    para_Output[0]=[r'G:\1_BeiJingUP\AUGB\Data\20220629\Parameters\LAT_China1km.tif',
+                    r'G:\1_BeiJingUP\AUGB\Data\20220629\Parameters\dem_china1km.tif',
+                     r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\Clay.tif',
+                     r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\CoarseSand.tif',
+                     r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\FineSand.tif',
+                     r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\OrganicMass.tif',
+                     r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\PowderedSand.tif']
+    for yr in range(2000,2021):
         print(yr)
         '''Data Tif List'''
         # staticPath
         dymtif = [glob(dymPath+os.sep+r'*'+str(yr)+r'*.tif') for dymKey,dymPath in zip(list(para_Output[1].keys()),list(para_Output[1].values()))]    # dymPath+os.sep+dymKey.upper()[:-1]+r'_'+str(yr)+r'.tif'
         dymtif = sum(dymtif, [])    # 解决List嵌套
-
         yrTifList = para_Output[0]+dymtif
         dataDf, im_proj, im_geotrans = EsRaster.read_tifList(yrTifList)
 
         # Block split
-        xid = dataDf[(dataDf.iloc[:, 3] > -1) & (dataDf.iloc[:, 4] > 0) & (dataDf.iloc[:, 4] < 100) & (dataDf.iloc[:, 5] > -9999) & (dataDf.iloc[:, 11] >= 0) & (dataDf.iloc[:, 12] > -9999) & (dataDf.iloc[:, 23] > 0)].index.tolist()
+        # # clay>-1        0<cgrass<100      NDVI>=0              prcp>-9999               fpar>0
+        # xid = dataDf[(dataDf.iloc[:, 3] > -1) & (dataDf.iloc[:, 2] > 0) & (dataDf.iloc[:, 2] < 100) & (dataDf.iloc[:, 5] > -9999) & (dataDf.iloc[:, 8] >= 0) & (dataDf.iloc[:, 12] > -9999) & (dataDf.iloc[:, 18] > 0)].index.tolist()
+        # clay>-1        0<cgrass<100      NDVI>=0              prcp>-9999               fpar>0
+        xid = dataDf[(dataDf.iloc[:, 2] > -1) & (dataDf.iloc[:, 3] > -9999) & (dataDf.iloc[:, 7] >= 0) & (dataDf.iloc[:, 12] > -9999) & (dataDf.iloc[:, 18] > 0)].index.tolist()
         indf = dataDf.iloc[xid, :]
+        indf.columns = X_columns#[X_columns[0]] + X_columns[2:]
+        # indf = indf.reindex(columns=X_columns, fill_value=yr)
+        indf = np.array(indf)
         indf = np.array_split(indf,200)
         estimators = [regressor for i in range(200)]
 
@@ -153,7 +253,7 @@ def RFEstimate(X,
         outdat[xid] = outResults_
         outdat = outdat.reshape(4088,4998)
 
-        EsRaster.write_img(r"G:\1_BeiJingUP\AUGB\Data\20220629\Results\RF_AGB"+os.sep+r'RF_AGB_'+str(yr)+r'.tif', im_proj, im_geotrans, outdat)
+        EsRaster.write_img(r"G:\1_BeiJingUP\AUGB\Data\20220629\Results\RF_AGB_4"+os.sep+r'RF_AGB_'+str(yr)+r'.tif', im_proj, im_geotrans, outdat)
     print()
 
     return

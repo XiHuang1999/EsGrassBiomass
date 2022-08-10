@@ -145,7 +145,7 @@ if __name__=="__main__":
         print('',end='')
 
 
-    # '''读取站点文件'''
+    # # '''读取站点文件'''
     # # G:\1_BeiJingUP\CommonData\temp\Export_Output_2.shp
     # # sitedf = pd.read_csv(exlFile, header=0)
     # # Load CSV files and Delete unstable Data
@@ -170,7 +170,7 @@ if __name__=="__main__":
     # # allcsv.to_excel(outPath + os.sep + r'Table\All_yrs_Sites.xlsx', index=False)
     # # allcsv.to_csv(outPath + os.sep + r'Table\All_yrs_Sites1.csv', index=False)
     # print()
-    #
+
     # '''## Sample ##'''
     # print(r'Sample : ',end=r'')
     # allyr = pd.DataFrame([])
@@ -210,8 +210,8 @@ if __name__=="__main__":
     '''Algth Prepare'''
     # allyr = pd.read_csv(r"G:\1_BeiJingUP\AUGB\Data\20220629\allyr.csv", index_col=0)
     # allyr = pd.read_csv(r"G:\1_BeiJingUP\AUGB\Data\20220629\allyr_NDVI0-1.csv",index_col=0)
-    allyr = pd.read_csv(r"G:\1_BeiJingUP\AUGB\Data\20220629\allyr_SetRange2-600.csv",index_col=0)
-    allyr = allyr[(allyr[r'Soil_Clay'] > -9999) & (allyr[r'CGrass'] < 100) & (allyr[r'CGrass'] > 0)]
+    allyr = pd.read_csv(r"G:\1_BeiJingUP\AUGB\Data\20220629\allyr_SetRange2-600_DeletZB.csv",index_col=0)
+    allyr = allyr[(allyr[r'Soil_Clay'] > -9999) & (allyr[r'CGrass'] < 100)  & (allyr[r'AGB'] <= 380)] #& (allyr[r'CGrass'] > 0)
     allyr = allyr.iloc[:,1:]
 
 
@@ -225,7 +225,7 @@ if __name__=="__main__":
 
 
     Ycols = [i for i in allyr.columns if
-             i not in ['AGB', 'ID', 'LON', 'Parameters_LAT', 'Year']]#,'Soil_Clay.tif', 'Soil_CoarseSand.tif', 'Soil_FineSand.tif','Soil_OrganicMass.tif', 'Soil_PH', 'Soil_PowderedSand.tif', 'Parameters_cgrass']]  # 'Year', or Ycols = allyr[allyr.columns.difference(['A', 'B'])]
+             i not in ['AGB', 'ID', 'LON', 'Parameters_LAT','Slope','Aspect','Soil_PH_h2o','Year','CGrass','Field1']]#,'Soil_Clay.tif', 'Soil_CoarseSand.tif', 'Soil_FineSand.tif','Soil_OrganicMass.tif', 'Soil_PH', 'Soil_PowderedSand.tif', 'Parameters_cgrass']]  # 'Year', or Ycols = allyr[allyr.columns.difference(['A', 'B'])]
 
     ## Vari describe
     # # region Description-Heatmap
@@ -239,10 +239,10 @@ if __name__=="__main__":
     # sns.heatmap(corr_mat, cmap='PiYG', annot=True, mask=mask, linewidths=.05, square=True, annot_kws={'size': 6.5, 'weight':'bold'}, fmt=".2f")
     # # print(corr_mat)
     # plt.subplots_adjust(left=.1, right=0.95, bottom=0.22, top=0.95)
-    # plt.savefig(outPath+os.sep+r'PIC'+os.sep+'Corr_Heatmap.png',dpi=500,bbox_inches='tight')#, transparent=True
+    # plt.savefig(outPath+os.sep+r'PIC'+os.sep+'Corr_Heatmap_4.png',dpi=500,bbox_inches='tight')#, transparent=True
     # plt.show()
     # # endregion
-    #
+
     # # region draw_distribution_histogram
     # plt.style.use('ggplot')     # 设置绘图风格
     # plt.rcParams['font.sans-serif'] = ['Microsoft YaHei'] # 处理中文乱码
@@ -263,39 +263,68 @@ if __name__=="__main__":
     # plt.ylabel('Frequency')
     # plt.title('AGB频数分布')      # 添加标题
     # # plt.legend()                # 显示图例
-    # plt.savefig(outPath + os.sep + r'PIC' + os.sep + 'Distribution_hist.png', dpi=500, bbox_inches='tight')  # , transparent=True
+    # plt.savefig(outPath + os.sep + r'PIC' + os.sep + 'Distribution_hist_4.png', dpi=500, bbox_inches='tight')  # , transparent=True
     # plt.show()
     # print('')
-    # # endregion
-
-    algY = allyr['AGB'].values
-    algX = allyr[Ycols].values
-
-    # region 归一化处理
-    # algX = pd.DataFrame(algX)
-    # algX = algX.apply(lambda x: (x - np.min(x)) / (np.max(x) - np.min(x)))
-    # algX = algX.values
-    # endregion
-
-    print(Ycols)
+    # # # # endregion
 
     # # region RF
-    # RF_Algorithm.RFEstimate(algX, algY, [staticPath, dynamicParasD], 0.9 )
+    # allid = list(allyr.index)
+    allyr = allyr.reset_index()
+    deleteIndex = [  15,   88, 1270, 1275, 1664, 1665, 2518, 3152, 3523, 3921]+[  88,  388,  389, 1270, 1462, 1669, 1823, 2636, 2660, 3125, 3181,
+        3352, 3377, 3419, 3477, 3523, 3739, 3832, 3860, 3917, 3921, 3959]+[  88,  106,  389, 1270, 1380, 1479, 1739, 1788, 1825, 1987, 2567,
+        2620, 2636, 2638, 2657, 2675, 2921, 3083, 3084, 3157, 3174, 3176,
+        3181, 3209, 3265, 3286, 3352, 3363, 3409, 3419, 3472, 3477, 3523,
+        3860, 3917, 3921, 3950, 3959]+[  88,  106, 1350, 1380, 1583, 1739, 1788, 1803, 1825, 2211, 2567,
+        2620, 2821, 2921, 3003, 3083, 3084, 3172, 3174, 3209, 3286, 3352,
+        3428, 3661, 3860, 3917, 3921, 3925, 3950, 3955]+[  88,  106, 1366, 1380, 1384, 1583, 1609, 1739, 1803, 1825, 1852,
+        2023, 2211, 2643, 2809, 3083, 3084, 3172, 3174, 3411, 3412, 3420,
+        3421, 3428, 3547, 3661, 3668, 3735, 3917, 3921]+[   6,   88, 1380, 1383, 1549, 1583, 1609, 1709, 1739, 1803, 1817,
+        1825, 1852, 2024, 2025, 2211, 2212, 2415, 2643, 2680, 2809, 2922,
+        2923, 2988, 2989, 3084, 3172, 3361, 3412, 3420, 3421, 3428, 3510,
+        3548, 3668, 3713, 3817, 3818, 3882, 3921, 3928, 3954]+[   6,   88, 1380, 1381, 1382, 1571, 1583, 1600, 1709, 1817, 2027,
+        2029, 2211, 2212, 2680, 2809, 2923, 2988, 3361, 3412, 3548, 3818,
+        3882, 3916, 3928, 3929]+[  29, 1844, 2034, 2204, 2433, 2434, 2616, 2621, 2627]
+    deleteIndex = list(dict.fromkeys(deleteIndex))
+    allyr = allyr.drop(deleteIndex)
+
+
+    # allyr = allyr.reset_index()
+    # allyr = allyr.drop([1279, 1281, 1639, 1796, 1978, 2180, 2420, 2536, 2643, 2654, 3004, 3075, 3144, 3308, 3366, 3426, 3432, 3441, 3544, 3549])
+    # allyr = allyr.drop('index',axis=1)
+    # allyr = allyr.reset_index()
+    # allyr = allyr.drop([60, 1279, 1386, 1414, 1418, 1423, 1440, 1549, 1970, 1971, 2171,
+    #     2525, 2629, 2631, 2637, 2641, 2691, 2775, 2990, 3005, 3147, 3275,
+    #     3403, 3409, 3416, 3484, 3518, 3528, 3529])
+    # allyr = allyr.drop('index',axis=1)
+    # allyr = allyr.reset_index()
+    # allyr = allyr.drop([1569, 1631, 2365, 2757])
+    # allyr = allyr.drop([1313])
+    # allyr = allyr.drop([1635, 1968, 2520, 2623, 2632, 2979, 3115, 3387, 3393])
+    algY = allyr['AGB']
+    algX = allyr[Ycols]
+    print(Ycols)
+    # RF_Algorithm.RFEstimate(algX, algY, [staticPath, dynamicParasD], 0.925)
     # # for i in range(1,24):
     # #     para = {'n_estimators': 566, 'max_features': i, 'bootstrap': True}
     # #     RF_Algorithm.RFEstimate(algX,algY,[staticPath,dynamicParasD],0.9,para,)
     # # endregion
 
     # region SVM
-
-    # region zscore标准化
-    # from sklearn import preprocessing
-    # zscore = preprocessing.StandardScaler()
-    # zscore = zscore.fit_transform(allyr)
-    # allyr = pd.DataFrame(zscore, index=allyr.index, columns=allyr.columns)
-    # endregion
+    # # region 归一化处理
+    # stdAllyr = pd.DataFrame(allyr)
+    # stdAllyr = stdAllyr.apply(lambda x: (x - np.min(x)) / (np.max(x) - np.min(x)))
+    # algY = allyr['AGB'].values
+    # algX = stdAllyr[Ycols].values
+    # # endregion
+    # # region zscore标准化
+    # # from sklearn import preprocessing
+    # # zscore = preprocessing.StandardScaler()
+    # # zscore = zscore.fit_transform(allyr)
+    # # allyr = pd.DataFrame(zscore, index=allyr.index, columns=allyr.columns)
 
     # SVM_Algorithm.SVMEstimate(algX, algY, [staticPath, dynamicParasD], 0.9)
+    # print()
     # endregion
 
 
@@ -307,7 +336,7 @@ if __name__=="__main__":
     # allyr = pd.DataFrame(zscore, index=allyr.index, columns=allyr.columns)
     # endregion
 
-    Cubist_Algorithm.CBEstimate(allyr[Ycols], allyr['AGB'], [staticPath, dynamicParasD], 0.9)
+    Cubist_Algorithm.CBEstimate(allyr[Ycols], allyr['AGB'], [staticPath, dynamicParasD], 0.925)
 
     print('')
     # for sheet in sheetList[:-1]:

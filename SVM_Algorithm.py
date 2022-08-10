@@ -36,7 +36,7 @@ import EsRaster,readConfig
 def SVMEstimate(X,
                Y,
                para_Output,
-               train_size=0.9,RF_kwargs={'n_estimators':566,'max_features':5 ,'bootstrap':True}
+               train_size=0.9,SVM_kwargs={'n_estimators':566,'max_features':5 ,'bootstrap':True}
                             # 树的棵树，默认是100     # 寻找最佳分割时要考虑的特征数量
                           #'max_depth':None,
                           #'random_state':None, # 控制构建树时样本的随机抽样
@@ -76,7 +76,7 @@ def SVMEstimate(X,
     # print('Time Using:%.2f min' % ((time()-t1)/60),end=' / ')
 
     # region 多项式核函数
-    regressor = SVR()
+    regressor = SVR() #(kernel='poly',degree=13,gamma='auto',tol=0.001)
     # # Parameters 1
     param_distribs = {
         # 均匀离散随机变量
