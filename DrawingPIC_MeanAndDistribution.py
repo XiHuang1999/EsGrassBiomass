@@ -17,6 +17,7 @@ from osgeo import osr
 from cartopy.crs import epsg
 from matplotlib.image import imread
 from scipy.interpolate import make_interp_spline
+import matplotlib.ticker as mticker
 
 def getSRSPair(dataset):
     '''
@@ -77,7 +78,7 @@ def smooth_xy(lx, ly):
     """
     x = np.array(lx)
     y = np.array(ly)
-    x_smooth = np.linspace(x.min(), x.max(), 300)
+    x_smooth = np.linspace(x.min(), x.max(), 140)
     y_smooth = make_interp_spline(x, y)(x_smooth)
     return x_smooth, y_smooth
 
@@ -97,8 +98,9 @@ startLon = 70
 endLon = 138
 startLat = 15
 endLat = 50
-extents = [startLon, endLon, startLat, endLat]  # [-180,180,-90,90]#
 res = '50m' # BaceMap Resolution
+moveWindow = 3
+extents = (startLon, endLon, startLat, endLat)  # [-180,180,-90,90]#
 geo = ccrs.Geodetic()
 projAlb = ccrs.AlbersEqualArea()
 projPlc = ccrs.PlateCarree() #central_longitude=110
@@ -106,7 +108,7 @@ projMct = ccrs.Mercator()
 # endregion
 
 # region Drawing
-fig = plt.figure(figsize=(10,7.5))  # 创建Figure对象
+fig = plt.figure(figsize=(12.5,7.5))  # 创建Figure对象
 gs = fig.add_gridspec(row,col) # 添加子图
 # endregion
 
@@ -118,9 +120,9 @@ gl.top_labels = False
 gl.right_labels = False
 # ax1.stock_img()
 ax1.add_feature(cfeature.OCEAN.with_scale(res))
-ax1.add_feature(cfeature.LAND.with_scale(res), edgecolor='gray')
+ax1.add_feature(cfeature.LAND.with_scale(res),color='mintcream', edgecolor='gray')
 ax1.add_feature(cfeature.LAKES.with_scale(res), edgecolor='gray')
-ax1.add_feature(cfeature.RIVERS.with_scale(res))
+# ax1.add_feature(cfeature.RIVERS.with_scale(res))
 # ax1.add_feature(cfeature.BORDERS.with_scale(res))
 
 # 栅格
@@ -128,7 +130,7 @@ ds,img_proj,img_geotrans,img_data = read_img(tif)
 img_data[img_data<0] = np.nan
 # SHP
 CHN = cfeat.ShapelyFeature(Reader(CHNshp).geometries(),projPlc, edgecolor='k', facecolor='none')
-HN = cfeat.ShapelyFeature(Reader(NHshp).geometries(),projPlc, edgecolor='k',facecolor='none')
+NH = cfeat.ShapelyFeature(Reader(NHshp).geometries(),projPlc, edgecolor='k',facecolor='none')
 
 clevs = np.linspace(tifRange[0], tifRange[1], colorBarSectionsNum)        # 对颜色进行分段
 # 栅格可视化，同时根据像元值设置图片颜色
@@ -139,51 +141,116 @@ tifExtent = geo.transform_points(projPlc,
 tifExtent = (tifExtent[0][0],tifExtent[1][0],tifExtent[0][1],tifExtent[1][1])
 # Or use tifExtent = (img_geotrans[0], img_geotrans[3] + img_geotrans[5] * img_data.shape[0], img_geotrans[0] + img_geotrans[1] * img_data.shape[1], img_geotrans[3])
 
-ax1.imshow(img_data,extent=tifExtent, origin='upper',transform=projPlc)
-# ax1.add_feature(CHNshp, linewidth=2,alpha=0.9, zorder=1)
-# ax1.add_feature(NHshp, linewidth=2,alpha=0.9, zorder=1)
+imgtif = ax1.imshow(img_data, extent=tifExtent, origin='upper',transform=projPlc,cmap='RdBu_r')
+ax1.add_feature(CHN, linewidth=2,alpha=0.9, zorder=1)
+ax1.add_feature(NH, linewidth=2,alpha=0.9, zorder=1)
 ax1.set_extent(extents)     # ax1.set_global()
-plt.show()
 
-# 绘制色带
-# cbar = fig.colorbar(ax1, orientation='vertical',
-#                     pad=0.08, aspect=20, shrink=0.65)
-# cbar.set_ticks([int(i) for i in np.linspace(tifRange[0], tifRange[1], 11)])
-# cbar.set_label('AGB Value (gDM/$^{-2}$)') #我的数据没有负值，所以快乐值都是正值，祝见者天天开心
 
-# #设置南海子图的坐标
-# left, bottom, width, height = 0.67, 0.14, 0.21, 0.23
-# axNH = fig.add_axes(
-#     [left, bottom, width, height],
-#     projection=projMct
-# )
-# #添加南海子图的详细内容
-# axNH.add_feature(CHN, linewidth=2,alpha=0.9, zorder=1)
-# axNH.add_feature(NH, linewidth=2,alpha=0.9, zorder=1)
-# axNH.add_feature(cfeature.COASTLINE.with_scale('50m'), linewidth=2,zorder=1)    #加载分辨率为50的海岸线
-# axNH.add_feature(cfeature.RIVERS.with_scale('50m'), linewidth=2,zorder=1)       #加载分辨率为50的河流
-# axNH.add_feature(cfeature.LAKES.with_scale('50m'), zorder=1)                    #加载分辨率为50的湖泊
-#
-# #设置南海子图的坐标范围，和边框linewidth
-# axNH.set_extent([105, 125, 0, 25])
-# axNH.outline_patch.set_linewidth(2)
+
+
+#设置南海子图的坐标
+left, bottom, width, height = 0.58, 0.05, 0.21, 0.23
+axNH = fig.add_axes(
+    [left, bottom, width, height],
+    projection=projMct
+)
+#添加南海子图的详细内容
+axNH.add_feature(CHN, linewidth=1.5,alpha=0.9, zorder=1)
+axNH.add_feature(NH, linewidth=1.5,alpha=0.9, zorder=1)
+axNH.add_feature(cfeature.OCEAN.with_scale(res))
+axNH.add_feature(cfeature.LAND.with_scale(res),color='mintcream', edgecolor='gray')
+axNH.add_feature(cfeature.LAKES.with_scale(res), edgecolor='gray')
+axNH.add_feature(cfeature.RIVERS.with_scale(res))
+
+#设置南海子图的坐标范围，和边框linewidth
+axNH.set_extent([105, 125, 0, 25])
+axNH.outline_patch.set_linewidth(2)
 
 # endregion
 
 # region top Pic
+moveWindow = 5
+vx = np.linspace(start=tifExtent[0],stop=tifExtent[1], num=img_data.shape[1], endpoint=False)
+# vm = np.nanmean(img_data,axis=1)
+# vm[np.isnan(vm)]=0
+# vx, vm = smooth_xy(vx, vm)
+vm = np.array([])
+for i in range(moveWindow-1,img_data.shape[1],1):
+    vm = np.append(vm, np.nanmean(np.nanmean(img_data[:,i-moveWindow:i], axis=0)) )
+vm[np.isnan(vm)]=0
+sid = np.where(vx>73)[0][0]
+eid = np.where(vx<130)[0][-1]
+vm = vm[sid:eid+1-moveWindow]
+vx = vx[sid:eid+1-moveWindow]
+vx, vm = smooth_xy(vx, vm)
+
 ax2 = fig.add_subplot(gs[0, 0:col-1])
-ax2.plot([1, 2], [3, 4])
+ax2.plot(vx,vm,linewidth=2,c=r'Black')
+ax2.xaxis.set_label_position("top")
+ax2.set_xlim(70,endLon)
+ax2.tick_params("both", which='major', direction='in')
 # endregion
 
 # region Right Pic
-vx = np.linspace(start=startLat+111*tifExtent[2],stop=startLat+111*tifExtent[2]+img_data.shape[0], num=img_data.shape[0], endpoint=False)
-vm = np.nanmean(img_data,axis=1)
+moveWindow = 3
+vx = np.linspace(start=tifExtent[2],stop=tifExtent[3], num=img_data.shape[0], endpoint=False)
+# vm = np.nanmean(img_data,axis=1)
+# vm[np.isnan(vm)]=0
+# vx, vm = smooth_xy(vx, vm)
+vm = np.array([])
+for i in range(img_data.shape[0],moveWindow-1,-1):
+    vm = np.append(vm, np.nanmean(np.nanmean(img_data[i-moveWindow:i,:], axis=1)) )
 vm[np.isnan(vm)]=0
+sid = np.where(vx>20)[0][0]
+eid = np.where(vx<55)[0][-1]
+vm = vm[sid:eid+1-moveWindow]
+vx = vx[sid:eid+1-moveWindow]
 vx, vm = smooth_xy(vx, vm)
 ax3 = fig.add_subplot(gs[1:, col-1])
-ax3.plot(vm,vx)
-# ax3.set_ylim([1,2])
+ax3.plot(vm,vx,linewidth=2,c=r'Black')
+ax3.set_ylim(startLat,55)
+ax3.yaxis.set_label_position("right")
+ax3.tick_params("both", which='major', direction='in')
 # endregion
+
+
+
+# 绘制色带1
+# cbar = plt.colorbar(imgtif, orientation='horizontal',
+#                     pad=0.08, aspect=20, shrink=0.65)
+# cbar.set_ticks([int(i) for i in np.linspace(tifRange[0], tifRange[1], 11)])
+# cbar.set_label('AGB Value (gDM/$^{-2}$)') #我的数据没有负值，所以快乐值都是正值，祝见者天天开心
+# 绘制色带2
+# axBar=fig.add_axes([0,0.17,0.5,0.05])
+# fig.colorbar(imgtif,orientation='horizontal',cax=ax1)   #,cax=axBar
+# 绘制色带3
+# position = fig.add_axes([0.66,0.13,0.03,0.74])#添加子图用来存放色条
+# cb = fig.colorbar(imgtif,shrink=0.4, fraction=0.05, ax = ax1)#,cax=ax3 )#绘制colorbar并省称为cb
+# axBar = cb.ax#召唤出cb的ax属性并省称为ax2,这时ax2即视为一个子图
+# axBar.yaxis.set_ticks_position('right')#将数值刻度移动到左侧
+# axBar.tick_params(which='both',labelsize=10,left=True,direction='in')#修改刻度样式，并使左右都有刻度
+# axBar.yaxis.set_minor_locator(mticker.MultipleLocator(20))
+# 绘制色带4
+from matplotlib import cm
+position=fig.add_axes([0.66,0.13,0.03,0.74],projection='polar')#添加子图用来存放色条
+cmap=cm.get_cmap('RdBu_r',len(clevs)-1) #获得等值线填色图的色条对应分级
+#划分极坐标系中的x坐标
+angle=np.arange(0,2*np.pi,2*np.pi/(len(clevs)-1))
+#划分极坐标系中的y坐标，由于我们要使cbar对其，所以高度都取2
+radius=np.array([2]*(len(clevs)-1))
+cmaps=cmap(range(len(clevs)-1))
+#设置旋转偏移
+# ax1.set_theta_offset(np.pi/2)
+#绘制极坐标中的bar
+position.bar(angle,radius,width=2*np.pi/(len(clevs)-1),color=cmaps,align='center')
+position.set_ylim(1,2)
+# cb=fig.colorbar(imgtif,cax=position,shrink=0.4)#绘制colorbar并省称为cb
+# axBar=cb.ax#召唤出cb的ax属性并省称为ax2,这时ax2即视为一个子图
+# 标注文字
+# for i,x,y in zip(clevs,angle,radius):
+#     ax1.text(x-0.1,y+0.17,i,fontsize=3)
+# ax1.text(0.9,2.6,'气温：℃',fontsize=4)
 
 # region Adjust Pic Show
 # plt.subplots_adjust(left=0.01, right=1, bottom=0.01, top=1, wspace=0.35, hspace=0.35)
