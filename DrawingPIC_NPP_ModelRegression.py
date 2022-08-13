@@ -112,16 +112,16 @@ for col in range(dfmean.shape[1]):
     for row in range(col,dfmean.shape[1]):
         linreg = st.linregress(pd.Series(dfmean.iloc[:,col], dtype=np.float64), pd.Series(dfmean.iloc[:,row], dtype=np.float64))
         if linreg.pvalue < 0.01:
-            print(col, ' ', row)
+            print(col, ' and ', row, str(linreg.rvalue**2))
             plt.text(col+0.6, row+0.45, "**", size=12, alpha=2, color="Black")
         elif linreg.pvalue < 0.05:
-            print(col,' ',row)
+            print(col, ' and ', row, str(linreg.rvalue**2))
             plt.text(col+0.6, row+0.45, "*", size = 12, alpha = 2, color = "Black")
         else:
-            print()
+            None
 sns.heatmap(corr_mat, cmap='PiYG', annot=True, mask=mask, linewidths=.05, square=True, annot_kws={'size': 6.5, 'weight':'bold'}, fmt=".2f")
 # print(corr_mat)
 plt.subplots_adjust(left=.1, right=0.95, bottom=0.22, top=0.95)
 plt.title(r'NPP Corr-Picture')      # 添加标题
-plt.savefig(r"G:\1_BeiJingUP\AUGB\Data\NPP\PIC"+os.sep+'Corr_Heatmap_5ModelAndLAI.png',dpi=500,bbox_inches='tight')#, transparent=True
+# plt.savefig(r"G:\1_BeiJingUP\AUGB\Data\NPP\PIC"+os.sep+'Corr_Heatmap_5ModelAndLAI.png',dpi=500,bbox_inches='tight')#, transparent=True
 plt.show()

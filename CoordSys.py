@@ -87,7 +87,7 @@ def lonlat2imagexy(dataset, lon, lat):
     # lonlat2geo
     prosrs, geosrs = getSRSPair(dataset)
     ct = osr.CoordinateTransformation(geosrs, prosrs)
-    x = ct.TransformPoint(lat,lon)[0]
+    x = ct.TransformPoint(lat, lon)[0]
     y = ct.TransformPoint(lat, lon)[1]
     # geo2imagexy
     trans = dataset.GetGeoTransform()
