@@ -2,7 +2,7 @@
 
 # @Time : 2022-08-08 11:22
 # @Author : XiHuang O.Y.
-# @Site : 
+# @Site :
 # @File : DrawingPIC_MeanAndDistribution.py
 # @Software: PyCharm
 
@@ -89,8 +89,8 @@ CHNshp = r'G:\1_BeiJingUP\CommonData\标准-2020年中国行政区划边界-省�
 NHshp = r'G:\1_BeiJingUP\CommonData\标准-2020年中国行政区划边界-省、市-Shp\2020年中国行政区划边界-省、市-Shp\全国行政边界\南沙群岛海上国境线.shp'
 Alberts_China = ccrs.AlbersEqualArea(central_longitude=110, central_latitude=0, standard_parallels=(25, 47))
 
-tifRange = [0,300]
-colorBarSectionsNum = 16
+tifRange = [0,150]
+colorBarSectionsNum = 10
 
 # fig相关参数
 row,col = 4,4
@@ -100,6 +100,9 @@ startLat = 15
 endLat = 50
 res = '50m' # BaceMap Resolution
 moveWindow = 3
+# plt.rcParams['font.serif'] = ['Times New Roman']
+plt.rcParams['font.weight'] = 'bold'
+plt.rc('font',family='Times New Roman')
 extents = (startLon, endLon, startLat, endLat)  # [-180,180,-90,90]#
 geo = ccrs.Geodetic()
 projAlb = ccrs.AlbersEqualArea()
@@ -120,7 +123,7 @@ gl.top_labels = False
 gl.right_labels = False
 # ax1.stock_img()
 ax1.add_feature(cfeature.OCEAN.with_scale(res))
-ax1.add_feature(cfeature.LAND.with_scale(res),color='mintcream', edgecolor='gray')
+ax1.add_feature(cfeature.LAND.with_scale(res),color='whitesmoke', edgecolor='gray')
 ax1.add_feature(cfeature.LAKES.with_scale(res), edgecolor='gray')
 # ax1.add_feature(cfeature.RIVERS.with_scale(res))
 # ax1.add_feature(cfeature.BORDERS.with_scale(res))
@@ -132,7 +135,6 @@ img_data[img_data<0] = np.nan
 CHN = cfeat.ShapelyFeature(Reader(CHNshp).geometries(),projPlc, edgecolor='k', facecolor='none')
 NH = cfeat.ShapelyFeature(Reader(NHshp).geometries(),projPlc, edgecolor='k',facecolor='none')
 
-clevs = np.linspace(tifRange[0], tifRange[1], colorBarSectionsNum)        # 对颜色进行分段
 # 栅格可视化，同时根据像元值设置图片颜色
 # Rs = ax1.contourf(geoGrid[0], geoGrid[1], img_data, transform=Alberts_China, cmap=plt.cm.jet, levels=clevs, extend='both') #clevs,#transform=Alberts_China,cmap=plt.cm.jet,zorder=10)
 tifExtent = geo.transform_points(projPlc,
@@ -141,7 +143,7 @@ tifExtent = geo.transform_points(projPlc,
 tifExtent = (tifExtent[0][0],tifExtent[1][0],tifExtent[0][1],tifExtent[1][1])
 # Or use tifExtent = (img_geotrans[0], img_geotrans[3] + img_geotrans[5] * img_data.shape[0], img_geotrans[0] + img_geotrans[1] * img_data.shape[1], img_geotrans[3])
 
-imgtif = ax1.imshow(img_data, extent=tifExtent, origin='upper',transform=projPlc,cmap='RdBu_r')
+imgtif = ax1.imshow(img_data, extent=tifExtent, origin='upper',transform=projPlc,cmap='RdBu',vmin=tifRange[0], vmax=tifRange[1]+tifRange[1]/colorBarSectionsNum)
 ax1.add_feature(CHN, linewidth=2,alpha=0.9, zorder=1)
 ax1.add_feature(NH, linewidth=2,alpha=0.9, zorder=1)
 ax1.set_extent(extents)     # ax1.set_global()
@@ -159,7 +161,7 @@ axNH = fig.add_axes(
 axNH.add_feature(CHN, linewidth=1.5,alpha=0.9, zorder=1)
 axNH.add_feature(NH, linewidth=1.5,alpha=0.9, zorder=1)
 axNH.add_feature(cfeature.OCEAN.with_scale(res))
-axNH.add_feature(cfeature.LAND.with_scale(res),color='mintcream', edgecolor='gray')
+axNH.add_feature(cfeature.LAND.with_scale(res),color='whitesmoke', edgecolor='gray')
 axNH.add_feature(cfeature.LAKES.with_scale(res), edgecolor='gray')
 axNH.add_feature(cfeature.RIVERS.with_scale(res))
 
@@ -180,7 +182,7 @@ for i in range(moveWindow-1,img_data.shape[1],1):
     vm = np.append(vm, np.nanmean(np.nanmean(img_data[:,i-moveWindow:i], axis=0)) )
 vm[np.isnan(vm)]=0
 sid = np.where(vx>73)[0][0]
-eid = np.where(vx<130)[0][-1]
+eid = np.where(vx<138)[0][-1]
 vm = vm[sid:eid+1-moveWindow]
 vx = vx[sid:eid+1-moveWindow]
 vx, vm = smooth_xy(vx, vm)
@@ -216,6 +218,7 @@ ax3.tick_params("both", which='major', direction='in')
 
 
 
+# region ColorBar
 # 绘制色带1
 # cbar = plt.colorbar(imgtif, orientation='horizontal',
 #                     pad=0.08, aspect=20, shrink=0.65)
@@ -233,24 +236,43 @@ ax3.tick_params("both", which='major', direction='in')
 # axBar.yaxis.set_minor_locator(mticker.MultipleLocator(20))
 # 绘制色带4
 from matplotlib import cm
-position=fig.add_axes([0.66,0.13,0.03,0.74],projection='polar')#添加子图用来存放色条
-cmap=cm.get_cmap('RdBu_r',len(clevs)-1) #获得等值线填色图的色条对应分级
+clevs = np.linspace(tifRange[0], tifRange[1], colorBarSectionsNum+1)        # 对颜色进行分段
+rotateBar = np.pi/2+np.pi/len(clevs)
+axBar=fig.add_axes([0.05,0.08,0.15,0.15],projection='polar')#添加子图用来存放色条
+cmap=cm.get_cmap('RdBu',len(clevs)) #获得等值线填色图的色条对应分级
 #划分极坐标系中的x坐标
-angle=np.arange(0,2*np.pi,2*np.pi/(len(clevs)-1))
+angle=np.arange(0,2*np.pi,2*np.pi/(len(clevs)))
 #划分极坐标系中的y坐标，由于我们要使cbar对其，所以高度都取2
-radius=np.array([2]*(len(clevs)-1))
-cmaps=cmap(range(len(clevs)-1))
+radius=np.array([6]*(len(clevs)))
+cmaps=cmap(range(len(clevs)))
 #设置旋转偏移
-# ax1.set_theta_offset(np.pi/2)
+axBar.set_theta_offset(rotateBar)
 #绘制极坐标中的bar
-position.bar(angle,radius,width=2*np.pi/(len(clevs)-1),color=cmaps,align='center')
-position.set_ylim(1,2)
+axBar.bar(angle,radius,width=2*np.pi/(len(clevs)-1),color=cmaps,align='center')
+# axBar.set_rmax(2)
+# axBar.set_rmin(0)
+axBar.set_rlim(0,2)
+axBar.set_ylim(-2,2)
+
+# axBar.set_rticks(np.arange(0, 2, 1))
+# axBar.xaxis.set_major_locator(mticker.MultipleLocator(360/len(clevs)))
+# axBar.gridlines(draw_labels=True,x_inline=clevs, y_inline=True) #添加网格线
 # cb=fig.colorbar(imgtif,cax=position,shrink=0.4)#绘制colorbar并省称为cb
 # axBar=cb.ax#召唤出cb的ax属性并省称为ax2,这时ax2即视为一个子图
 # 标注文字
-# for i,x,y in zip(clevs,angle,radius):
-#     ax1.text(x-0.1,y+0.17,i,fontsize=3)
-# ax1.text(0.9,2.6,'气温：℃',fontsize=4)
+for i,x,y in zip(clevs,angle,radius):
+    if i < 60:
+        pad = 0
+    else:
+        pad = 0.5
+    # axBar.text(x-np.pi/len(clevs)-rotateBar,2+0.8+pad,int(i),fontsize=10,horizontalalignment='center')       # axBar.xaxis.set_ticklabels([int(i) for i in clevs])   OR   # axBar.set_thetagrids(np.arange(0.0+180/len(clevs), 360.0+180/len(clevs), 360/len(clevs)), labels=[int(i) for i in np.append(clevs[1:],[0])])
+    axBar.text(x-np.pi/len(clevs),2+0.5+pad,int(i),fontsize=10,horizontalalignment='center')       # axBar.xaxis.set_ticklabels([int(i) for i in clevs])   OR   # axBar.set_thetagrids(np.arange(0.0+180/len(clevs), 360.0+180/len(clevs), 360/len(clevs)), labels=[int(i) for i in np.append(clevs[1:],[0])])
+axBar.text(np.pi-np.pi/len(clevs),-1,'\nAGB\nValue',fontsize=12,horizontalalignment='center')
+axBar.yaxis.set_visible(False)
+axBar.xaxis.grid(False)
+axBar.set_xticklabels('')
+# endregion
+
 
 # region Adjust Pic Show
 # plt.subplots_adjust(left=0.01, right=1, bottom=0.01, top=1, wspace=0.35, hspace=0.35)
