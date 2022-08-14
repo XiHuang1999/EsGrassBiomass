@@ -264,7 +264,7 @@ for i,x,y in zip(clevs,angle,radius):
     if i < 60:
         pad = 0
     else:
-        pad = 0.5
+        pad = 0.3
     # axBar.text(x-np.pi/len(clevs)-rotateBar,2+0.8+pad,int(i),fontsize=10,horizontalalignment='center')       # axBar.xaxis.set_ticklabels([int(i) for i in clevs])   OR   # axBar.set_thetagrids(np.arange(0.0+180/len(clevs), 360.0+180/len(clevs), 360/len(clevs)), labels=[int(i) for i in np.append(clevs[1:],[0])])
     axBar.text(x-np.pi/len(clevs),2+0.5+pad,int(i),fontsize=10,horizontalalignment='center')       # axBar.xaxis.set_ticklabels([int(i) for i in clevs])   OR   # axBar.set_thetagrids(np.arange(0.0+180/len(clevs), 360.0+180/len(clevs), 360/len(clevs)), labels=[int(i) for i in np.append(clevs[1:],[0])])
 axBar.text(np.pi-np.pi/len(clevs),-1,'\nAGB\nValue',fontsize=12,horizontalalignment='center')
@@ -280,6 +280,6 @@ plt.subplots_adjust(wspace=0.5, hspace=0.6)
 plt.tight_layout()
 # endregion
 
-
+plt.savefig(r'G:\1_BeiJingUP\AUGB\Data\20220629\Results\PIC'+os.sep+'RF4_Distribution.png',dpi=500,bbox_inches='tight')#, transparent=True
 plt.show()
 print()
