@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# @Time : 2022-08-08 11:22
+# @Time : 2022-08-15 10:02
 # @Author : XiHuang O.Y.
-# @Site :
-# @File : DrawingPIC_MeanAndDistribution.py
+# @Site : 
+# @File : DrawingPIC_YearlyDistribution.py
 # @Software: PyCharm
 
 import matplotlib.pyplot as plt
@@ -85,9 +85,11 @@ def smooth_xy(lx, ly):
 
 # region Parameters
 # tif相关参数
-tif = r'G:\1_BeiJingUP\CommonData\temp\111Pro.tif'
+tif = r"G:\1_BeiJingUP\AUGB\Data\20220629\Results\RF_AGB_4\ExtractByCGrass_Set-9999Null_QTP_QF_Mean\AGB_2000to2020_Mean_CGrass_setNull_NoProj.tif"
+yearlyTifPath = r'G:\1_BeiJingUP\AUGB\Data\20220629\Results\RF_AGB_4\ExtractByCGrass_Set-9999Null_QTP_QF'
 CHNshp = r'G:\1_BeiJingUP\CommonData\标准-2020年中国行政区划边界-省、市-Shp\2020年中国行政区划边界-省、市-Shp\全国行政边界\全国无子区域.shp'
 NHshp = r'G:\1_BeiJingUP\CommonData\标准-2020年中国行政区划边界-省、市-Shp\2020年中国行政区划边界-省、市-Shp\全国行政边界\南沙群岛海上国境线.shp'
+QTPshp = r'G:\1_BeiJingUP\CommonData\QTP\QTP_WGS84.shp'
 Alberts_China = ccrs.AlbersEqualArea(central_longitude=110, central_latitude=0, standard_parallels=(25, 47))
 
 tifRange = [0,150]
@@ -95,13 +97,16 @@ colorBarSectionsNum = 10
 cbar = 'Spectral'
 
 # fig相关参数
-row,col = 4,4
-startLon = 70
-endLon = 138
-startLat = 15
-endLat = 50
+startY = 2000
+endY = 2020
+row,col = 4,8
+startLon = 72
+endLon = 107
+startLat = 25
+endLat = 42-1.25-1
 res = '50m' # BaceMap Resolution
 moveWindow = 3
+interp_yr = 5
 # plt.rcParams['font.serif'] = ['Times New Roman']
 plt.rcParams['font.weight'] = 'bold'
 plt.rc('font',family='Times New Roman')
@@ -113,21 +118,22 @@ projMct = ccrs.Mercator()
 # endregion
 
 # region Drawing
-fig = plt.figure(figsize=(9.6,7.5))  # 创建Figure对象
+fig = plt.figure(figsize=(24.2,6))  # 创建Figure对象
 gs = fig.add_gridspec(row,col) # 添加子图
 # endregion
 
 # region Main Pic
-ax1 = fig.add_subplot(gs[1:, 0:col-1], projection=projPlc)  # 通过添加projection参数 创建geoaxes对象
+ax1 = fig.add_subplot(gs[:, 0:3], projection=projPlc)  # 通过添加projection参数 创建geoaxes对象
 # ax1.coastlines(resolution='auto', color='k')
 gl = ax1.gridlines(color='lightgrey', linestyle='-', draw_labels=True)
 gl.top_labels = False
 gl.right_labels = False
+gl.ylocator=mticker.FixedLocator(np.arange(startLat-1,endLat+1,2))
 # ax1.stock_img()
 ax1.add_feature(cfeature.OCEAN.with_scale(res))
 ax1.add_feature(cfeature.LAND.with_scale(res),color='whitesmoke', edgecolor='gray')
 ax1.add_feature(cfeature.LAKES.with_scale(res), edgecolor='gray')
-ax1.add_feature(cfeature.RIVERS.with_scale(res))
+# ax1.add_feature(cfeature.RIVERS.with_scale(res))
 # ax1.add_feature(cfeature.BORDERS.with_scale(res))
 
 # 栅格
@@ -136,6 +142,7 @@ img_data[img_data<0] = np.nan
 # SHP
 CHN = cfeat.ShapelyFeature(Reader(CHNshp).geometries(),projPlc, edgecolor='k', facecolor='none')
 NH = cfeat.ShapelyFeature(Reader(NHshp).geometries(),projPlc, edgecolor='k',facecolor='none')
+QTP = cfeat.ShapelyFeature(Reader(QTPshp).geometries(),projPlc, edgecolor='red',facecolor='none')
 
 # 栅格可视化，同时根据像元值设置图片颜色
 # Rs = ax1.contourf(geoGrid[0], geoGrid[1], img_data, transform=Alberts_China, cmap=plt.cm.jet, levels=clevs, extend='both') #clevs,#transform=Alberts_China,cmap=plt.cm.jet,zorder=10)
@@ -148,122 +155,97 @@ tifExtent = (tifExtent[0][0],tifExtent[1][0],tifExtent[0][1],tifExtent[1][1])
 imgtif = ax1.imshow(img_data, extent=tifExtent, origin='upper',transform=projPlc,cmap=cbar,vmin=tifRange[0], vmax=tifRange[1]+tifRange[1]/colorBarSectionsNum,aspect=1.3)
 ax1.add_feature(CHN, linewidth=2,alpha=0.9, zorder=1)
 ax1.add_feature(NH, linewidth=2,alpha=0.9, zorder=1)
+ax1.add_feature(QTP, linewidth=3,alpha=0.9, zorder=1)
 ax1.set_extent(extents)     # ax1.set_global()
 
 
 
 
-#设置南海子图的坐标
-left, bottom, width, height = 0.55, 0.077, 0.21, 0.23
-axNH = fig.add_axes(
-    [left, bottom, width, height],
-    projection=projMct
-)
-#添加南海子图的详细内容
-axNH.add_feature(CHN, linewidth=1.5,alpha=0.9, zorder=1)
-axNH.add_feature(NH, linewidth=1.5,alpha=0.9, zorder=1)
-axNH.add_feature(cfeature.OCEAN.with_scale(res))
-axNH.add_feature(cfeature.LAND.with_scale(res),color='whitesmoke', edgecolor='gray')
-axNH.add_feature(cfeature.LAKES.with_scale(res), edgecolor='gray')
-axNH.add_feature(cfeature.RIVERS.with_scale(res))
-
-#设置南海子图的坐标范围，和边框linewidth
-axNH.set_extent([105, 125, 0, 25])
-axNH.outline_patch.set_linewidth(2)
+# #设置南海子图的坐标
+# left, bottom, width, height = 0.58, 0.05, 0.21, 0.23
+# axNH = fig.add_axes(
+#     [left, bottom, width, height],
+#     projection=projMct
+# )
+# #添加南海子图的详细内容
+# axNH.add_feature(CHN, linewidth=1.5,alpha=0.9, zorder=1)
+# axNH.add_feature(NH, linewidth=1.5,alpha=0.9, zorder=1)
+# axNH.add_feature(cfeature.OCEAN.with_scale(res))
+# axNH.add_feature(cfeature.LAND.with_scale(res),color='whitesmoke', edgecolor='gray')
+# axNH.add_feature(cfeature.LAKES.with_scale(res), edgecolor='gray')
+# axNH.add_feature(cfeature.RIVERS.with_scale(res))
+#
+# #设置南海子图的坐标范围，和边框linewidth
+# axNH.set_extent([105, 125, 0, 25])
+# axNH.outline_patch.set_linewidth(2)
 
 # endregion
 
-# region top Pic
-moveWindow = 111
-vx = np.linspace(start=tifExtent[0],stop=tifExtent[1], num=img_data.shape[1], endpoint=False)
-vx = vx[int(moveWindow/2):img_data.shape[1]-int(moveWindow/2)-1]
-# vm = np.nanmean(img_data,axis=1)
-# vm[np.isnan(vm)]=0
-# vx, vm = smooth_xy(vx, vm)
-vm = np.array([])
-mstd_up = np.array([])
-mstd_bot = np.array([])
-for i in range(moveWindow-1,img_data.shape[1],1):
-    vm = np.append(vm, np.nanmean(img_data[:,i-moveWindow:i]))
-    mstd_up = np.append(mstd_up, np.nanmean(img_data[:,i-moveWindow:i]) + np.nanstd(img_data[:,i-moveWindow:i]) )
-    mstd_bot = np.append(mstd_bot, np.nanmean(img_data[:,i-moveWindow:i]) - np.nanstd(img_data[:,i-moveWindow:i]) )
-vm[np.isnan(vm)]=0
-sid = max(np.where(vm != 0)[0][0],np.where(vx>73)[0][0])
-eid = min(np.where(vm != 0)[0][-1],np.where(vx<138)[0][-1])
-vm = vm[sid:eid+1-moveWindow]
-mstd_up = mstd_up[sid:eid+1-moveWindow]
-mstd_bot = mstd_bot[sid:eid+1-moveWindow]
-vx = vx[sid:eid+1-moveWindow]
-# vx, vm = smooth_xy(vx, vm)
-
-ax2 = fig.add_subplot(gs[0, 0:col-1])
-ax2.plot(vx,vm,linewidth=2,c=r'Black')
-ax2.fill_between(vx,mstd_bot,mstd_up, color='skyblue')
-# ax2.xaxis.set_label_position("top")
-ax2.set_xlim(70,endLon)
-ax2.set_ylim(0, 150)
-ax2.tick_params("both", which='major', direction='in')
-ax2.set_xlabel(r"Longitude ($^\circ$)",ha="center")
-ax2.set_ylabel('Mean value of AGB')
-# endregion
-
-# region Right Pic
-# moveWindow = 3
-# vx = np.linspace(start=tifExtent[2],stop=tifExtent[3], num=img_data.shape[0], endpoint=False)
+# # region top Pic
+# moveWindow = 5
+# vx = np.linspace(start=tifExtent[0],stop=tifExtent[1], num=img_data.shape[1], endpoint=False)
 # # vm = np.nanmean(img_data,axis=1)
 # # vm[np.isnan(vm)]=0
 # # vx, vm = smooth_xy(vx, vm)
 # vm = np.array([])
-# for i in range(img_data.shape[0],moveWindow-1,-1):
-#     vm = np.append(vm, np.nanmean(np.nanmean(img_data[i-moveWindow:i,:], axis=1)) )
+# for i in range(moveWindow-1,img_data.shape[1],1):
+#     vm = np.append(vm, np.nanmean(np.nanmean(img_data[:,i-moveWindow:i], axis=0)) )
 # vm[np.isnan(vm)]=0
-# sid = np.where(vx>20)[0][0]
-# eid = np.where(vx<55)[0][-1]
+# sid = np.where(vx>73)[0][0]
+# eid = np.where(vx<138)[0][-1]
 # vm = vm[sid:eid+1-moveWindow]
 # vx = vx[sid:eid+1-moveWindow]
 # vx, vm = smooth_xy(vx, vm)
-# ax3 = fig.add_subplot(gs[1:, col-1])
-# ax3.plot(vm,vx,linewidth=2,c=r'Black')
-# ax3.set_ylim(startLat,55)
-# ax3.yaxis.set_label_position("right")
-# ax3.tick_params("both", which='major', direction='in')
-moveWindow = 111
-vx = np.linspace(start=tifExtent[2],stop=tifExtent[3], num=img_data.shape[0], endpoint=False)
-vx = vx[int(moveWindow/2):img_data.shape[0]-int(moveWindow/2)-1]
-# vm = np.nanmean(img_data,axis=1)
-# vm[np.isnan(vm)]=0
-# vx, vm = smooth_xy(vx, vm)
-vm = np.array([])
-mstd_up = np.array([])
-mstd_bot = np.array([])
-for i in range(img_data.shape[0],moveWindow,-1):
-    vm = np.append(vm, np.nanmean(img_data[i - moveWindow:i, :]))
-    mstd_up = np.append(mstd_up, np.nanmean(img_data[i - moveWindow:i, :]) + np.nanstd(img_data[i - moveWindow:i, :]) )
-    mstd_bot = np.append(mstd_bot, np.nanmean(img_data[i - moveWindow:i, :]) - np.nanstd(img_data[i - moveWindow:i, :]) )
+#
+# ax2 = fig.add_subplot(gs[0, 0:col-1])
+# ax2.plot(vx,vm,linewidth=2,c=r'Black')
+# ax2.xaxis.set_label_position("top")
+# ax2.set_xlim(70,endLon)
+# ax2.tick_params("both", which='major', direction='in')
+# # endregion
 
-vm[np.isnan(vm)]=0
-sid = max(np.where(vm != 0)[0][0],np.where(vx>=20)[0][0])
-eid = min(np.where(vm != 0)[0][-1],np.where(vx<=55)[0][-1])
-vm = vm[sid:eid+1-moveWindow]
-mstd_up = mstd_up[sid:eid+1-moveWindow]
-mstd_bot = mstd_bot[sid:eid+1-moveWindow]
-vx = vx[sid:eid+1-moveWindow]
-# vx, vm = smooth_xy(vx, vm)
-ax3 = fig.add_subplot(gs[1:, col-1])
-ax3.plot(vm,vx,linewidth=2,c=r'Black')
-ax3.fill_betweenx(vx,mstd_bot,mstd_up, color='skyblue')
+# region Right Pic
+for yr in range(startY,endY+1,interp_yr):
+    # Read Yearly tif
+    yrtif = yearlyTifPath + os.sep + r'RF_AGB_' + str(yr) + r'.tif'
+    ds, img_proj, img_geotrans, img_data = read_img(yrtif)
+    img_data[img_data < 0] = np.nan
 
-ax3.set_ylim(startLat,endLat)
-# ax3.yaxis.set_label_position("right")
-ax3.tick_params("both", which='major', direction='in')
-ax3.set_xlim(0, 150)
-ax3.set_ylim(startLat,55)
-# ax3.set_title('Year: '+str(yr))
-ax3.set_ylabel(r"Latitude ($^\circ$)",ha="center")
-ax3.set_xlabel('Mean value of AGB')
-# endregion
+    moveWindow = 111
+    vx = np.linspace(start=tifExtent[2],stop=tifExtent[3], num=img_data.shape[0], endpoint=False)
+    vx = vx[int(moveWindow/2):img_data.shape[0]-int(moveWindow/2)-1]
+    # vm = np.nanmean(img_data,axis=1)
+    # vm[np.isnan(vm)]=0
+    # vx, vm = smooth_xy(vx, vm)
+    vm = np.array([])
+    mstd_up = np.array([])
+    mstd_bot = np.array([])
+    for i in range(img_data.shape[0],moveWindow,-1):
+        vm = np.append(vm, np.nanmean(img_data[i - moveWindow:i, :]))
+        mstd_up = np.append(mstd_up, np.nanmean(img_data[i - moveWindow:i, :]) + np.nanstd(img_data[i - moveWindow:i, :]) )
+        mstd_bot = np.append(mstd_bot, np.nanmean(img_data[i - moveWindow:i, :]) - np.nanstd(img_data[i - moveWindow:i, :]) )
 
+    vm[np.isnan(vm)]=0
+    sid = np.where(vx>=27)[0][0]
+    eid = np.where(vx<=40)[0][-1]
+    vm = vm[sid:eid+1-moveWindow]
+    mstd_up = mstd_up[sid:eid+1-moveWindow]
+    mstd_bot = mstd_bot[sid:eid+1-moveWindow]
+    vx = vx[sid:eid+1-moveWindow]
+    # vx, vm = smooth_xy(vx, vm)
+    ax3 = fig.add_subplot(gs[:, 3+int((yr-2000)/interp_yr)])
+    ax3.plot(vm,vx,linewidth=2,c=r'Black')
+    ax3.fill_betweenx(vx,mstd_bot,mstd_up, color='skyblue')
 
+    ax3.set_ylim(startLat,endLat)
+    # ax3.yaxis.set_label_position("right")
+    ax3.tick_params("both", which='major', direction='in')
+    ax3.set_xlim(25, 100)
+    ax3.set_ylim(startLat, endLat+1.4)
+    # ax3.set_title('Year: '+str(yr))
+    ax3.set_ylabel(r"Longitude ($^\circ$)",ha="center")
+    ax3.set_xlabel(r'AGB Value of '+str(yr)+'\'s')
+    # endregion
 
 # region ColorBar
 # 绘制色带1
@@ -285,7 +267,7 @@ ax3.set_xlabel('Mean value of AGB')
 from matplotlib import cm
 clevs = np.linspace(tifRange[0], tifRange[1], colorBarSectionsNum+1)        # 对颜色进行分段
 rotateBar = np.pi/2+np.pi/len(clevs)
-axBar=fig.add_axes([0.09,0.1,0.15,0.15],projection='polar')#添加子图用来存放色条
+axBar=fig.add_axes([0,0.17,0.15,0.15],projection='polar')#添加子图用来存放色条
 cmap=cm.get_cmap(cbar,len(clevs)) #获得等值线填色图的色条对应分级
 #划分极坐标系中的x坐标
 angle=np.arange(0,2*np.pi,2*np.pi/(len(clevs)))
@@ -323,10 +305,10 @@ axBar.set_xticklabels('')
 
 # region Adjust Pic Show
 # plt.subplots_adjust(left=0.01, right=1, bottom=0.01, top=1, wspace=0.35, hspace=0.35)
-plt.subplots_adjust(wspace=0.5, hspace=0.6)
+# plt.subplots_adjust(wspace=0.5, hspace=0.6)
 plt.tight_layout()
 # endregion
 
-plt.savefig(r'G:\1_BeiJingUP\AUGB\Data\20220629\Results\PIC'+os.sep+'RF4_Distribution.png',dpi=500,bbox_inches='tight')#, transparent=True
+plt.savefig(r'G:\1_BeiJingUP\AUGB\Data\20220629\Results\PIC'+os.sep+'RF4_Yearly--Distribution.png',dpi=500,bbox_inches='tight')#, transparent=True
 plt.show()
 print()
