@@ -1,8 +1,15 @@
 # -*- coding: utf-8 -*-
 
-# @Time : 2022-08-10 20:30
+# @Time : 2022-08-15 21:38
 # @Author : XiHuang O.Y.
 # @Site : 
+# @File : DrawingPIC_NPP_ModelRegression_WithGrassType.py
+# @Software: PyCharm
+# -*- coding: utf-8 -*-
+
+# @Time : 2022-08-10 20:30
+# @Author : XiHuang O.Y.
+# @Site :
 # @File : DrawingPIC_NPP_ModelRegression.py
 # @Software: PyCharm
 from osgeo import gdal
@@ -45,7 +52,7 @@ def read_img(filename):
 
 
 # LAI Data
-luccPath = r"G:\1_BeiJingUP\AUGB\Data\NPP\QFCGrass\CGrassChina_mask_1_99.tif"
+luccPath = r""
 laiPath = r"J:\Integrated_analysis_data\Data\1Y\LAI_2003_2017_1y"
 # data after normal Path
 datNormalPath = [r"G:\1_BeiJingUP\AUGB\Data\NPP\Normal_Geodata",
@@ -67,6 +74,7 @@ dataKey = ['Mask_Mul_',
            'Mask_Mul_',
            'Mask_Reproject_Mul_',
            'Resample_Mask_',
+           'Mask_Reproject_Mul_',
            r'TAVG_',
            r'PRCP_']
 # The R square of the data and LAI
@@ -83,7 +91,7 @@ endY = 2017
 # LAI
 mdlmean = []
 for yr in range(startY,endY+1):
-    tif = glob(laiPath + os.sep + str(yr) + os.sep + r"Mask_Reproject_Mul_*.tif")[0]
+    tif = glob(laiPath + os.sep + str(yr) + os.sep + r"Mul*.tif")[0]
     img_proj, img_geotrans, laiyr = read_img(tif)
     laiyr[laiyr < 0] = np.nan
     if yr // 4 == 0:
@@ -96,20 +104,15 @@ mean.append(mdlmean)
 for mdi in range(len(datPath)):
     mdlmean = []
     for yr in range(startY,endY+1):
-        if mdi < 5:
-            tif = glob(datPath[mdi] + os.sep + str(yr) + os.sep + r"*" + dataKey[mdi] + r"*.tif")[0]
-        else:
-            tif = glob(datPath[mdi] + os.sep + r"*" + dataKey[mdi] + r'*' + str(yr) + r"*.tif")[0]
+        tif = glob(datPath[mdi] + os.sep + str(yr) + os.sep + r"*" + dataKey[mdi] + r"*.tif")[0]
         print(tif)
         img_proj,img_geotrans,img_data = read_img(tif)
         img_data[img_data<0] = np.nan
-        img_data[lucc<1] = np.nan
-        img_data[lucc>99] = np.nan
         mdlmean.append(np.nanmean(img_data))
     mean.append(mdlmean)
 
 dfmean = pd.DataFrame(mean).T
-dfmean.columns = ["MCD15A2-LAI","MuSyQ-NPP","GLASS-NPP",r"MOD17A3-NPP",r"CASA-NPP",r"UCAS-NPP",'TAVG','PRCP']
+dfmean.columns = ["MOD-LAI","Geodata","GLASS",r"MODIS",r"TPDC",r"UCAS"]
 corr_mat = dfmean.corr()
 f, ax = plt.subplots(figsize=(4, 4))
 mask = np.zeros_like(corr_mat)
@@ -122,15 +125,15 @@ for col in range(dfmean.shape[1]):
         linreg = st.linregress(pd.Series(dfmean.iloc[:,col], dtype=np.float64), pd.Series(dfmean.iloc[:,row], dtype=np.float64))
         if linreg.pvalue < 0.01:
             print(col, ' and ', row, str(linreg.rvalue**2))
-            plt.text(col+0.6, row+0.45, "**", size=12, color="Black")
+            plt.text(col+0.6, row+0.45, "**", size=12, alpha=2, color="Black")
         elif linreg.pvalue < 0.05:
             print(col, ' and ', row, str(linreg.rvalue**2))
-            plt.text(col+0.6, row+0.45, "*", size = 12, color = "Black")
+            plt.text(col+0.6, row+0.45, "*", size = 12, alpha = 2, color = "Black")
         else:
             None
 sns.heatmap(corr_mat, cmap='PiYG', annot=True, mask=mask, linewidths=.05, square=True, annot_kws={'size': 6.5, 'weight':'bold'}, fmt=".2f")
 # print(corr_mat)
 plt.subplots_adjust(left=.1, right=0.95, bottom=0.22, top=0.95)
 plt.title(r'NPP Corr-Picture')      # 添加标题
-plt.savefig(r"G:\1_BeiJingUP\AUGB\Data\NPP\PIC"+os.sep+'Corr_Heatmap_5ModelAndLAI_andTavgPrcp.png',dpi=500,bbox_inches='tight')#, transparent=True
+# plt.savefig(r"G:\1_BeiJingUP\AUGB\Data\NPP\PIC"+os.sep+'Corr_Heatmap_5ModelAndLAI.png',dpi=500,bbox_inches='tight')#, transparent=True
 plt.show()
