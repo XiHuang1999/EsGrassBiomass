@@ -85,12 +85,7 @@ def lonlat2imagexy(dataset, lon, lat):
     :return: 影坐标或地理坐标(x, y)对应的影像图上行列号(row, col)
     '''
     # lonlat2geo
-    prosrs, geosrs = getSRSPair(dataset)
-    ct = osr.CoordinateTransformation(geosrs, prosrs)
-    x = ct.TransformPoint(lat, lon)[0]
-    y = ct.TransformPoint(lat, lon)[1]
+    a, b = lonlat2geo(dataset, lon, lat)
     # geo2imagexy
-    trans = dataset.GetGeoTransform()
-    a = np.array([[trans[1], trans[2]], [trans[4], trans[5]]])
-    b = np.array([x - trans[0], y - trans[3]])
-    return np.linalg.solve(a, b)
+    a, b = geo2imagexy(dataset, a, b)
+    return [a,b]
