@@ -16,7 +16,7 @@ from glob import glob
 EsRasterPath = os.getcwd()
 sys.path.append(EsRasterPath)      # 添加函数文件位置
 import CoordSys
-os.environ['PROJ_LIB'] = r"C:\Anaconda\Anaconda\Lib\site-packages\osgeo\data\proj"
+# os.environ['PROJ_LIB'] = r"C:\Anaconda\Anaconda\Lib\site-packages\osgeo\data\proj"
 
 def read_img(filename):
     """
@@ -92,62 +92,34 @@ def SampleRaster(tifList, ptShp, siteName=r'FID', nirCellNum=1, Scope=''):
         # 存储着栅格数据集的地理坐标信息
         transform = dr.GetGeoTransform()
         # Sample
-        if 'NDVI' in os.path.basename(tif).upper():
-            for i in range(len(station_list)):
-                # LonLat to ColRow
-                [x, y] = CoordSys.geo2imagexy(dr, xValues[i], yValues[i])
-                # if math.isnan(x):
-                #     print('sdf')
-                # 判断方框滤波
-                if nirCellNum == 1:
-                    dt = dr.ReadAsArray(int(x), int(y), 1, 1)
-                elif nirCellNum % 2 == 0:
-                    print('nirCellNum：The box image element is set incorrectly and must be an odd number')
-                    break
-                else:
-                    dt = dr.ReadAsArray(int(x - (nirCellNum - 1) / 2), int(y - (nirCellNum - 1) / 2), nirCellNum,
-                                        nirCellNum)
-                if dt is None:
-                    print('EsRaster Error！ Cheack ReadAsArray at: ' + tif)
-                valueList = dt.flatten()
-                # 判断取值范围
-                if Scope == '':
-                    values[i][tif_i] = valueList.mean()
-                elif Scope == '>0':
-                    valueList = valueList[valueList > 0]
-                    values[i][tif_i] = valueList.mean()
-                else:
-                    print('EsRaster Error！ Shp ID in ' + str(i))
-                del dt
-        else:
-            for i in range(len(station_list)):
-                # LonLat to ColRow
-                [x, y] = CoordSys.lonlat2imagexy(dr, xValues[i], yValues[i])
-                # if math.isnan(x):
-                #     print('sdf')
-                # 判断方框滤波
-                if nirCellNum == 1:
-                    dt = dr.ReadAsArray(int(x), int(y), 1, 1)
-                elif nirCellNum % 2 == 0:
-                    print('nirCellNum：The box image element is set incorrectly and must be an odd number')
-                    break
-                else:
-                    dt = dr.ReadAsArray(int(x - (nirCellNum - 1) / 2), int(y - (nirCellNum - 1) / 2), nirCellNum,
-                                        nirCellNum)
-                if dt is None:
-                    print()
-                valueList = dt.flatten()
-                # 判断取值范围
-                if Scope == '':
-                    values[i][tif_i] = valueList.mean()
-                elif Scope == '>0':
-                    valueList = valueList[valueList > 0]
-                    values[i][tif_i] = valueList.mean()
-                else:
-                    print('EsRaster Error！ Shp ID in ' + str(i))
-                del dt
+        for i in range(len(station_list)):
+            # LonLat to ColRow
+            [x, y] = CoordSys.lonlat2imagexy(dr, xValues[i], yValues[i])
+            # if math.isnan(x):
+            #     print('sdf')
+            # 判断方框滤波
+            if nirCellNum == 1:
+                dt = dr.ReadAsArray(int(x), int(y), 1, 1)
+            elif nirCellNum % 2 == 0:
+                print('nirCellNum：The box image element is set incorrectly and must be an odd number')
+                break
+            else:
+                dt = dr.ReadAsArray(int(x - (nirCellNum - 1) / 2), int(y - (nirCellNum - 1) / 2), nirCellNum,
+                                    nirCellNum)
+            if dt is None:
+                print()
+            valueList = dt.flatten()
+            # 判断取值范围
+            if Scope == '':
+                values[i][tif_i] = valueList.mean()
+            elif Scope == '>0':
+                valueList = valueList[valueList > 0]
+                values[i][tif_i] = valueList.mean()
+            else:
+                print('EsRaster Error！ Shp ID in ' + str(i))
+            del dt
         del dr
-    colmns = [tif.split(os.sep)[-2] + r'_' + os.path.basename(tif).split(r'_')[0] for tif in tifList]
+    colmns = [tif.split(os.sep)[-2] + r'_' + ''.join(str(s+'_') for s in os.path.basename(tif).split(r'_')[0:2])[:-1] for tif in tifList]
     values = pd.DataFrame(values, columns=colmns)
     print()
     return values
@@ -174,11 +146,11 @@ startY = 2003
 endY = 2017
 
 # Model
-tiflist = glob(datPath + os.sep + r"*_Mean.tif")
+tiflist = glob(datPath + os.sep + r"*_Mean.tif") + glob(datPath + os.sep + r"*_R2.tif") + glob(datPath + os.sep + r"*_R2_.tif")
 tifName = [os.path.basename(tifi).split(r'_')[0] for tifi in tiflist]
 spdf = SampleRaster(tiflist, ptShp, 'PTID')
 ptdf = attibute_table(ptShp)
 spdf['TNPP'] = ptdf['TNPP']
-spdf.to_excel(r'G:\1_BeiJingUP\AUGB\Data\NPP\数据分析Table\集成结果和TNPP.xlsx')
+spdf.to_excel(r'G:\1_BeiJingUP\AUGB\Data\NPP\数据分析Table\集成结果和TNPP——all.xlsx')
 print()
 
