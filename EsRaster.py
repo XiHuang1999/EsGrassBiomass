@@ -34,7 +34,7 @@ os.environ['PROJ_LIB'] = r'C:\Anaconda\Anaconda\Lib\site-packages\osgeo\data\pro
 def read_img(filename):
     """
     filename: str,要读取的栅格文件
-    return: 函数输入图像所在的路径，输出图像的投影，仿射矩阵以及图像数组\n
+    return: 输出图像的投影，仿射矩阵以及图像数组\n
     """
     dataset = gdal.Open(filename)
     im_width = dataset.RasterXSize #栅格矩阵的列数
