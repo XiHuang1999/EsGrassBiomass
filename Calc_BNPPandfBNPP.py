@@ -8,8 +8,8 @@ import numpy as np
 import os, sys, time
 from glob import glob
 
-EsInitialPath = os.getcwd[]
-sys.path.append[EsInitialPath]      # 添加函数文件位置
+EsInitialPath = os.getcwd()
+sys.path.append(EsInitialPath)      # 添加函数文件位置
 import EsRaster,readConfig
 
 # # 初始化参数
@@ -29,124 +29,54 @@ r'G:\1_BeiJingUP\AUGB\Data\NPP\1Y_\MODIS_2000_2017_1y',
 r'G:\1_BeiJingUP\AUGB\Data\NPP\IntegResults\Multiply_Regression_Year']
 startY = 2003
 endY = 2017
+ftif = r'G:\1_BeiJingUP\AUGB\Data\20220629\Results\RF_AGB_4\ExtractByCGrass_Set-9999Null_QTP_QF\RF_AGB_2000.tif'
+R, cc, lucc = EsRaster.read_img(ftif)
+# lucc_rs = np.reshape(lucc, [lucc.shape[0] * lucc.shape[1], 1])
 
-# # Judge
-ANPP and TNPP
-first
-Tiff
-file
-name
-# if nppTifs[tifi].name[isstrprop[nppTifs[tifi].name, 'digit']] != anppTifs[tifi].name[
-        isstrprop[nppTifs[tifi].name, 'digit']]
+# # Calc BNPP and fBNPP
+for yr in range(startY,endY):
+    nppFile = glob(wks1+'\*'+str(yr)+'*.tif')[0]
+    anppFile = glob(wks2+'\*'+str(yr)+'*.tif')[0]
 
-# # Calc
-BNPP and fBNPP
-for yr=startY:endY
-nppTifs = dir[[wks1, '\*', num2str[yr], '*.tif']]
-anppTifs = dir[[wks2, '\*', num2str[yr], '*.tif']]
-nppFile = [wks1, filesep, nppTifs.name]
-anppFile = [wks2, filesep, anppTifs.name]
+    # # Read tiff
+    R, cc, npp = EsRaster.read_img(nppFile) # imread[ff]
+    npp[lucc < -9000] = np.nan
+    npp[npp < 0] = np.nan
+    R, cc, anpp = EsRaster.read_img(anppFile) # imread[ff]
+    anpp[lucc < -9000] = np.nan
+    anpp[anpp < 0] = np.nan
+    # # BNPP
+    bnpp = npp - anpp
+    # # Post BNPP
+    bnpp = np.reshape(bnpp, [lucc.shape[0]*lucc.shape[1], 1])
+    if len(bnpp[bnpp<0]) > 0:
+        for nppwksi in range(1,len(wks3)):
+            nppTif = glob(wks3[nppwksi] + '\*' + str(yr) + '*.tif')[0]
+            R, cc, nppi = EsRaster.read_img(nppTif) # imread[ff]
+            nppi[lucc < -9000] = np.nan
+            nppi[nppi < 0] = np.nan
+            bnppi = nppi - anpp
 
-# # Read
-tiff
-[npp, R, cc] = geotiffread[nppFile] # imread[ff]
-npp[lucc < -9000] = nan
-npp[npp < -9000] = nan
-[anpp, R, cc] = geotiffread[anppFile] # imread[ff]
-anpp[lucc < -9000] = nan
-anpp[anpp < -9000] = nan
-# # BNPP
-bnpp = npp - anpp
-# # Post
-BNPP
-bnpp = reshape[bnpp, [info.Height * info.Width, 1]]
-if sum[sum[bnpp < 0]] > 100
-    for nppwksi = 1:length[wks3]
-    nppTifs = dir[cell2mat[[wks3[nppwksi], '\*', num2str[yr], '*.tif']]]
-    [nppi, R, cc] = geotiffread[cell2mat[[wks3[nppwksi], filesep, nppTifs.name]]] # imread[ff]
-    nppi[lucc < -9000] = nan
-    nppi[nppi < -9000] = nan
-    bnppi = nppi - anpp
+            print('小于0像元数:'+str(len(bnpp[bnpp<0])),end='->')
+            bnppi = np.reshape(bnppi, [lucc.shape[0]*lucc.shape[1], 1])
+            bnpp[bnpp < 0] = bnppi[bnpp < 0]
+            if len(bnpp[bnpp<0]) == 0:
+                print(r'|| Break => ' + nppwksi)
+                break
+            print()
 
-    fprintf['小于0像元数: #d  /  ', sum[bnpp < 0]]
-    bnppi = reshape[bnppi, [info.Height * info.Width, 1]]
-    ind_bnpp = find[bnpp < 0]
-    ind_bnppi = find[bnppi > bnpp]
-    [ind, inda, indb] = intersect[ind_bnpp, ind_bnppi]
-    bnpp[ind] = bnppi[ind]
-    if sum[sum[bnpp < 0]] < 100
-        disp[[num2str[nppwksi], '==>Break']]
-        break
-    end
-end
-end
-bnpp = reshape[bnpp, [info.Height, info.Width]]
+    bnpp = np.reshape(bnpp, [lucc.shape[0],lucc.shape[1]])
 
-bnpp[bnpp < 0] = nan
-# bnpp[bnpp < 0] = -9999
-# bnpp[isnan[bnpp]] = -9999
-# fout = [bnppOutway, '\','BNPP_Mean - RF4_',num2str[yr],'.tif']
-          # geotiffwrite[fout, bnpp, R, 'GeoKeyDirectoryTag', info.GeoTIFFTags.GeoKeyDirectoryTag]
-o_bnpp[yr - startY + 1,:] = reshape[bnpp, [1, info.Height * info.Width]]
-o_anpp[yr - startY + 1,:] = reshape[anpp, [1, info.Height * info.Width]]
-o_npp[yr - startY + 1,:] = reshape[npp, [1, info.Height * info.Width]]
+    # bnpp[bnpp < 0] = np.nan
+    # bnpp[bnpp < 0] = -9999
+    # bnpp[isnan[bnpp]] = -9999
+    fout = bnppOutway + r'\\' + 'BNPP_Mean-RF4_' + str(yr) + r'.tif'
+    EsRaster.write_img(fout, R, cc, bnpp)
 
-# fbnpp = bnpp / npp
-# fbnpp[fbnpp < 0] = nan
-# fbnpp[fbnpp < 0] = -9999
-# fbnpp[isnan[fbnpp]] = -9999
-# fout = [fbnppOutway, '\','fBNPP_Mean - RF4_',num2str[yr],'.tif']
-          # geotiffwrite[fout, bnpp, R, 'GeoKeyDirectoryTag', info.GeoTIFFTags.GeoKeyDirectoryTag]
-# fprintf['#s \n', fout]
-#
-# x = npp[bnpp < 0]
-# y = anpp[bnpp < 0]
-#
-#
-# bnd = [-100 1100]
-# img = bnpp
-# img[isnan[img]] = 9999
-# figure
-imagesc[img, bnd]
-colorbar
-horz
-colormap[[[1 0 0]
-parula[12 - 2]
-white[1]]]
-#
-# img = bnpp
-# # img[isnan[img]] = -100
-# sepB = -100:50: 900
-# figure[1]
-# hist[img, sepB]
-#
-#
-# bnd = [-100 1100]
-# img[isnan[img]] = 9999
-# figure
-imagesc[img, bnd]
-colorbar
-horz
-colormap[[[1 0 0]
-parula[12 - 2]
-white[1]]]
-#
-# img = reshape[bnpp, [info.Height * info.Width, 1]]
-# sepB = -100:50: 900
-# figure[1]
-# hist[[x, y], sepB]
-# xlim[[-150, 150]]
-# legend['npp', 'anpp']
-#
-# img1 = reshape[npp, [info.Height * info.Width, 1]]
-# sepB = -100:50: 900
-# figure[1]
-# hist[img, sepB]
-#
-# img2 = reshape[anpp, [info.Height * info.Width, 1]]
-# sepB = -100:50: 900
-# figure[1]
-# hist[[img1, img2], sepB]
-#
-# legend['npp', 'anpp']
-end
+    fbnpp = bnpp / npp
+    # fbnpp[fbnpp < 0] = -9999
+    # fbnpp[isnan[fbnpp]] = -9999
+    fout = fbnppOutway + r'\\' + 'fBNPP_Mean-RF4_' + str(yr) + r'.tif'
+    EsRaster.write_img(fout, R, cc, fbnpp)
+
+print('Done!')
