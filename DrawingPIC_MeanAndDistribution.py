@@ -19,6 +19,7 @@ from matplotlib.image import imread
 from scipy.interpolate import make_interp_spline
 import matplotlib.ticker as mticker
 import os
+from tqdm import tqdm
 
 def getSRSPair(dataset):
     '''
@@ -183,7 +184,7 @@ vx = vx[int(moveWindow/2):img_data.shape[1]-int(moveWindow/2)-1]
 vm = np.array([])
 mstd_up = np.array([])
 mstd_bot = np.array([])
-for i in range(moveWindow-1,img_data.shape[1],1):
+for i in tqdm(range(moveWindow-1,img_data.shape[1],1),desc='Processing'):
     vm = np.append(vm, np.nanmean(img_data[:,i-moveWindow:i]))
     mstd_up = np.append(mstd_up, np.nanmean(img_data[:,i-moveWindow:i]) + np.nanstd(img_data[:,i-moveWindow:i]) )
     mstd_bot = np.append(mstd_bot, np.nanmean(img_data[:,i-moveWindow:i]) - np.nanstd(img_data[:,i-moveWindow:i]) )
@@ -236,7 +237,7 @@ vx = vx[int(moveWindow/2):img_data.shape[0]-int(moveWindow/2)-1]
 vm = np.array([])
 mstd_up = np.array([])
 mstd_bot = np.array([])
-for i in range(img_data.shape[0],moveWindow,-1):
+for i in tqdm(range(img_data.shape[0],moveWindow,-1),desc='Process2'):
     vm = np.append(vm, np.nanmean(img_data[i - moveWindow:i, :]))
     mstd_up = np.append(mstd_up, np.nanmean(img_data[i - moveWindow:i, :]) + np.nanstd(img_data[i - moveWindow:i, :]) )
     mstd_bot = np.append(mstd_bot, np.nanmean(img_data[i - moveWindow:i, :]) - np.nanstd(img_data[i - moveWindow:i, :]) )
@@ -327,6 +328,6 @@ plt.subplots_adjust(wspace=0.5, hspace=0.6)
 plt.tight_layout()
 # endregion
 
-plt.savefig(r'G:\1_BeiJingUP\AUGB\Data\20220629\Results\PIC'+os.sep+'RF4_Distribution.png',dpi=500,bbox_inches='tight')#, transparent=True
+# plt.savefig(r'G:\1_BeiJingUP\AUGB\Data\20220629\Results\PIC'+os.sep+'RF4_Distribution.png',dpi=500,bbox_inches='tight')#, transparent=True
 plt.show()
 print()
