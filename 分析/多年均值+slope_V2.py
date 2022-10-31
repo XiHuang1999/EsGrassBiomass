@@ -33,43 +33,29 @@ import matplotlib.ticker as mticker
 sys.path.append(r'E:\A_UCAS_Study\PythonWorkspace\EsGrassBiomass')      # 添加函数文件位置
 import EsRaster,readConfig
 
-'''时序均值计算'''
-keyName = [r'TNPP',r'BNPP',r'ANPP',r'fBNPP']
-filePath = r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan'
-stY = 2000
-edY = 2020
-yearList = [yr for yr in range(stY,edY+1)]
-dataStc = []
-ereStc = []
-for vi in range(len(keyName)):
-    tplist = []
-    tplist_er = []
-    for yr in range(stY,edY+1):
-        # ANPP
-        print(glob(filePath+os.sep+keyName[vi]+os.sep+r'*'+str(yr)+r'*.tif')[0])
-        img_proj,img_geotrans,img_data = EsRaster.read_img(glob(filePath+os.sep+keyName[vi]+os.sep+r'*'+str(yr)+r'*.tif')[0])
-        imgdata1 = img_data.reshape((img_data.shape[0]*img_data.shape[1],))
-        # imgdata1[imgdata1<0] = np.nan
-        tplist.append(np.nanmean(imgdata1))
-        tplist_er.append(np.nanstd(imgdata1)) #/math.sqrt(len(imgdata1))
-    dataStc.append(tplist)
-    ereStc.append(tplist_er)
-dataStc[3] = list(np.subtract([1]*len(dataStc[2]),dataStc[3]))
-
 '''参数初始化设置'''
 # region Parameters
 # tif相关参数
 tif = [r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\Out_Mean\ANPPMean_2000to2020_Proj.tif',
        r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\Out_Mean\BNPPMean_2000to2020_Proj.tif',
        r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\Out_Mean\TNPPMean_2000to2020_Proj.tif',
-       r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\Out_Mean\fBNPPMean_2000to2020_Proj.tif']
+       r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\Out_Mean\fBNPPMean_2000to2020_Proj.tif',
+       r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\Out_Slope\ANPP_2000to2020_slope_Proj.tif',
+       r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\Out_Slope\BNPP_2000to2020_slope_Proj.tif',
+       r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\Out_Slope\TNPP_2000to2020_slope_Proj.tif',
+       r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\Out_Slope\fBNPP_2000to2020_slope_Proj.tif']
 CHNshp = r'G:\1_BeiJingUP\CommonData\标准-2020年中国行政区划边界-省、市-Shp\2020年中国行政区划边界-省、市-Shp\全国行政边界\全国无子区域.shp'
 NHshp = r'G:\1_BeiJingUP\CommonData\标准-2020年中国行政区划边界-省、市-Shp\2020年中国行政区划边界-省、市-Shp\全国行政边界\南沙群岛海上国境线.shp'
 QTPshp = r'G:\1_BeiJingUP\CommonData\QTP\QTP_WGS84.shp'
 Alberts_China = ccrs.AlbersEqualArea(central_longitude=110, central_latitude=0, standard_parallels=(25, 47))
 tifRange = [0,150]
-colorBarSectionsNum = 5
-cbar = 'Spectral'
+cbNum = [5,6]
+from matplotlib.colors import ListedColormap,LinearSegmentedColormap
+clist=[(120/255,38/255,38/255),(255/255,209/255,117/255),(185/255,178/255,191/255),(39/255,32/255,110/255)]   # clist=[[45,85,85,0],[0,0,25,0],[85,87,52,0]]
+# clist=[(120/255,38/255,38/255),(255/255,255/255,145/255),(85/255,255/255,0/255),(39/255,32/255,110/255)]   # clist=[[45,85,85,0],[0,0,25,0],[85,87,52,0]]
+#ewcmp = LinearSegmentedColormap.from_list('chaos', clist, N=)  #newcmp = ListedColormap(clist)
+#newcmp = matplotlib.colors.ListedColormap(clist, 'indexed')
+cbar = ['Spectral','RdYlGn']
 # fig相关参数
 row,col = 4,4
 startLon = 72
@@ -84,10 +70,8 @@ moveWindow = 3
 plt.rcParams['font.weight'] = 'bold'
 plt.rc('font',family='Times New Roman')
 extents = (startLon, endLon, startLat, endLat)  # [-180,180,-90,90]#
+projPlc = ccrs.PlateCarree() #central_longitude=110,projAlb = ccrs.AlbersEqualArea(),projMct = ccrs.Mercator()
 geo = ccrs.Geodetic()
-projAlb = ccrs.AlbersEqualArea()
-projPlc = ccrs.PlateCarree() #central_longitude=110
-projMct = ccrs.Mercator()
 # 设置其他细节
 plt.rcParams['xtick.direction'] = 'in'
 plt.rcParams['ytick.direction'] = 'in'
@@ -99,29 +83,33 @@ plt.rcParams['font.size'] = 8
 
 
 
-gs = gridspec.GridSpec(5,6,width_ratios=[0.5,2,2,2,2,0.5],height_ratios=[25,25,5,3,2.5])#,hspace=0.2,hspace=0, wspace=0.2
-fig = plt.figure(figsize=(19/2.54,16/2.54))  #(figsize=(12.7,9.5))  # 创建Figure对象单位为12.7inch宽+9.5inch高: inch=cm/f
+gs = gridspec.GridSpec(4,6,width_ratios=[0.5,2,2,2,2,0.5],height_ratios=[25,25,25,25])#,hspace=0.2,hspace=0, wspace=0.2
+fig = plt.figure(figsize=(19/2.54,23/2.54))  #(figsize=(12.7,9.5))  # 创建Figure对象单位为12.7inch宽+9.5inch高: inch=cm/f
+plt.subplots_adjust(left=-0.01,bottom=0.03,right=1.04,top=0.99,hspace=0.15)#,wspace=0.19,hspace=0.21
 # gs = fig.add_gridspec(3,1) # 添加子图
 ax01 = fig.add_subplot(gs[0,0:3], projection=projPlc) #sharex=ax1
 ax02 = fig.add_subplot(gs[0,3:5], projection=projPlc) #sharex=ax1
 ax03 = fig.add_subplot(gs[1,0:3], projection=projPlc) #sharex=ax1
 ax04 = fig.add_subplot(gs[1,3:5], projection=projPlc) #sharex=ax1
-ax1 = fig.add_subplot(gs[2:,1:3]) #sharex=ax1
-ax2 = fig.add_subplot(gs[3,1:3],sharex=ax1)
-ax3 = fig.add_subplot(gs[4,1:3],sharex=ax1)
-ax2.set_facecolor('none')
-ax2.set_alpha(0)
-ax3.set_facecolor('none')
-ax3.set_alpha(0)
+ax05 = fig.add_subplot(gs[2,0:3], projection=projPlc) #sharex=ax1
+ax06 = fig.add_subplot(gs[2,3:5], projection=projPlc) #sharex=ax1
+ax07 = fig.add_subplot(gs[3,0:3], projection=projPlc) #sharex=ax1
+ax08 = fig.add_subplot(gs[3,3:5], projection=projPlc) #sharex=ax1
 
 
 '''绘图'''
-axlist = [ax01,ax02,ax03,ax04]
-vmins = [0,0,0,0]
-vmaxs = [500,1500,2500,1]
-HNlocx = [0.33,0.825,0.33,0.825]
-HNlocy = [0.669,0.669,0.314,0.314]
-cbLabel = ['{x:.0f}','{x:.0f}','{x:.0f}','{x:.1f}']
+axlist = [ax01,ax02,ax03,ax04,ax05,ax06,ax07,ax08]
+vmins = [  0,    0,    0, 0, -60, -180, -260, -0.2]     # [  0, -60,    0, -180,    0, -260, 0, -0.2]
+vmaxs = [500, 1500, 2500, 1,  60,  180,  260,  0.2]     # [500,  60, 1500,  180, 2500,  260, 1,  0.2]
+HNlocx = [0.33,    0.33+0.475,  0.33, 0.33+0.475,
+          0.33,    0.33+0.475,  0.33, 0.33+0.475]
+HNlocy = [0.775,            0.775,              0.775-0.2488,  0.775-0.24833,
+          0.775-2*0.24833,  0.775-2*0.24833,  0.775-3*0.24833,    0.775-3*0.24833]
+textx = [25,166,25,166,25,166,25,166]
+texty = [159.9,159.9,71.5,71.5,-17.0,-17.0,-105.5,-105.5]
+txt = ['a','b','c','d','a','b','c','d'] #['a','e','b','f','c','g','d','h']
+cbLabel = ['{x:.0f}','{x:.0f}','{x:.0f}','{x:.1f}','{x:.0f}','{x:.0f}','{x:.0f}','{x:.3f}']
+lbtitle = ['','Slope of ']
 for axi,tifi,ii in zip(axlist,tif,range(len(axlist))):
     print('GGG->')
     # region Main Pic
@@ -138,14 +126,15 @@ for axi,tifi,ii in zip(axlist,tif,range(len(axlist))):
     # axi.stock_img()
     axi.add_feature(cfeature.OCEAN.with_scale(res))
     axi.add_feature(cfeature.LAND.with_scale(res),color='white',lw=0.25, edgecolor='gray')
-    axi.add_feature(cfeature.LAKES.with_scale(res),lw=0.25, edgecolor='gray')
+    # axi.add_feature(cfeature.LAKES.with_scale(res),lw=0.25, edgecolor='gray')
     # axi.add_feature(cfeature.RIVERS.with_scale(res))
     # axi.add_feature(cfeature.BORDERS.with_scale(res))
 
     # 栅格
     img_proj,img_geotrans,img_data = EsRaster.read_img(tifi)
+    img_data[img_data<=-9998] = np.nan
     img_data[img_data>=vmaxs[ii]] = vmaxs[ii]-0.01
-    img_data[img_data<0] = np.nan
+    img_data[img_data<=vmins[ii]] = vmins[ii]+0.01
     # SHP
     QTP = cfeat.ShapelyFeature(Reader(QTPshp).geometries(),projPlc, edgecolor='k', facecolor='none')
     CHN = cfeat.ShapelyFeature(Reader(CHNshp).geometries(),projPlc, edgecolor='k', facecolor='none')
@@ -159,14 +148,28 @@ for axi,tifi,ii in zip(axlist,tif,range(len(axlist))):
     tifExtent = (tifExtent[0][0],tifExtent[1][0],tifExtent[0][1],tifExtent[1][1])
     # Or use tifExtent = (img_geotrans[0], img_geotrans[3] + img_geotrans[5] * img_data.shape[0], img_geotrans[0] + img_geotrans[1] * img_data.shape[1], img_geotrans[3])
 
-    # 分级显示
-    # norm = matplotlib.colors.Normalize(vmin=vmins[ii], vmax=vmaxs[ii])
-    bins = np.arange(vmins[ii], vmaxs[ii]+(vmaxs[ii]-vmins[ii])/colorBarSectionsNum, (vmaxs[ii]-vmins[ii])/colorBarSectionsNum)
+    # 分级显示Label # norm = matplotlib.colors.Normalize(vmin=vmins[ii], vmax=vmaxs[ii]) # levels = np.arange(vmins[ii], vmaxs[ii], (vmaxs[ii]-vmins[ii])/10)
+    if ii == 3:
+        bins = [0,0.2,0.4,0.6,0.8,1]
+    elif ii == 4:
+        bins = [-260, -4, -2, 0, 2, 4, 260]
+    elif ii == 5:
+        bins = [-100,-20,-10,0,10,20,100]
+    elif ii == 6:
+        bins = [-100,-20,-10,0,10,20,100]
+    elif ii == 7:
+        bins = [-0.2, -0.01, -0.005, 0, 0.005, 0.01, 0.2]
+    else:
+        colorBarSectionsNum = cbNum[ii % 2]
+        bins = np.arange(vmins[ii], vmaxs[ii]+(vmaxs[ii]-vmins[ii])/colorBarSectionsNum, (vmaxs[ii]-vmins[ii])/colorBarSectionsNum)
     nbin = len(bins) - 1
-    cmaps = mpl.cm.get_cmap(cbar, nbin)
+    # ColorBar 设置颜色
+    if ii in [9]:#[4,5,6,7]:
+        cmaps = LinearSegmentedColormap.from_list('chaos', clist, N=nbin)
+    else:
+        cmaps = mpl.cm.get_cmap(cbar[ii//4], nbin)
     norms = mpl.colors.BoundaryNorm(bins, nbin)
     formatter = mticker.StrMethodFormatter(cbLabel[ii])
-    # levels = np.arange(vmins[ii], vmaxs[ii], (vmaxs[ii]-vmins[ii])/10)
 
     # 现实主图tifmatplotlib
     imgtif = axi.imshow(img_data, extent=tifExtent, origin='upper',
@@ -179,25 +182,24 @@ for axi,tifi,ii in zip(axlist,tif,range(len(axlist))):
     # # position = plt.axes([0.1, 0.25, 0.7, 0.025])
     # plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), cax=axi, extend='both', shrink=0.4, label='气温  ℃',
     #              orientation='horizontal')
-    cb = fig.colorbar(imgtif,label=tifi.split(os.sep)[-1].split('Mean')[0],\
+    cb = fig.colorbar(imgtif,label=lbtitle[ii//4]+tifi.split(os.sep)[-1].split(r'_')[0].split('Mean')[0],\
                       ax=axi) #ticks=bins[0:nbin]
     cb.set_ticks(bins)
-    # cb.set_ticklabels([formatter(bin) for bin in bins])
-
+    cb.set_ticklabels([formatter(bin) for bin in bins])
     # cb.set_label(bins[0:nbin]) #'colorbar',fontdict=
 
     # axi.add_feature(QTP, linewidth=0.5,alpha=0.9, zorder=1)
     axi.add_feature(CHN, linewidth=0.5,alpha=0.9, zorder=1)
     axi.add_feature(NH, linewidth=0.5,alpha=0.9, zorder=1)
-    # axi.spines['right'].set_visible(False)
     axi.set_extent(extents)     # axi.set_global()
+    # axi.spines['right'].set_visible(False)
     # axi.set_title(tifi.split(os.sep)[-1].split('Mean')[0], fontsize='medium')
 
-    #设置南海子图的坐标
-    left, bottom, width, height = HNlocx[ii], HNlocy[ii], 0.08, 0.1
+    # #设置南海子图的坐标
+    left, bottom, width, height = HNlocx[ii], HNlocy[ii], 0.07, 0.07
     axNH = fig.add_axes(
         [left, bottom, width, height],
-        projection=projMct
+        projection=projPlc #projMct
     )
     #添加南海子图的详细内容
     axNH.add_feature(CHN, linewidth=0.5,alpha=0.9, zorder=1)
@@ -212,89 +214,13 @@ for axi,tifi,ii in zip(axlist,tif,range(len(axlist))):
     # axNH.outline_patch.set_linewidth(2)
 
 
+for ii in range(len(axlist)):
+    plt.text(-113+140*(ii%2), 336.7-88.4*(ii//2),r'('+txt[ii]+r')',fontdict={'fontsize':8,'weight':'bold'})
 
-
-
-
-
-
-# 将构造的ax右侧的spine向右偏移
-ax2.spines['right'].set_position(('outward',10))
-# ax2.spines['bottom'].set_position(('outward',500))
-ax3.spines['right'].set_position(('outward',10))
-
-# 初始化颜色
-key = ['TNPP and BNPP','TNPP and BNPP','ANPP','fBNPP']
-lc = ['black','tab:brown','tab:green','tab:red']
-# 绘制
-img1, = ax1.plot(yearList,dataStc[0],'o-',c=lc[0], alpha=0.6, label="TNPP") #, c='tab:blue'
-img2, = ax1.plot(yearList,dataStc[1],'o-',c=lc[1], alpha=0.6,label="BNPP")
-img3, = ax2.plot(yearList,dataStc[2],'o-',c=lc[2], alpha=0.6,label="ANPP")
-img4, = ax3.plot(yearList,dataStc[3],'o-',c=lc[3], alpha=0.6,label="fBNPP")
-# 获取对应折线图颜色给到spine ylabel yticks yticklabels
-axs = [ax1,ax1,ax2,ax3]
-imgs = [img1,img2,img3,img4]
-textx = [2012,2007,2010,2012]
-texty = [970,660,210,0.35]
-# 文字
-for i in range(len(axs)):
-    linreg = st.linregress(pd.Series(yearList, dtype=np.float64), pd.Series(dataStc[i], dtype=np.float64))
-    x = np.linspace(min(yearList), max(yearList), 100)
-    y = linreg[0]*x+linreg[1]
-    axs[i].plot(x,y,'--',c=lc[i],lw=1)
-    if linreg[0]<0.01:
-        axs[i].text(textx[i],texty[i], 'Slope=%.3f, R²=%.2f' % (linreg[0], linreg[2] ** 2), ha='left', va='bottom',
-                    c=lc[i]) # 位置：max(x) -0.2, max(dataStc[i][-5:])
-    else:
-        axs[i].text(textx[i], texty[i], 'Slope=%.2f, R²=%.2f' % (linreg[0], linreg[2] ** 2), ha='left', va='bottom',
-                    c=lc[i])  # 位置：max(x) -0.2, max(dataStc[i][-5:])
-
-# 轴颜色
-for i in range(len(axs)):
-    if i != 1:
-        axs[i].spines['right'].set_color(lc[i])
-        axs[i].set_ylabel(key[i], c=lc[i])
-        axs[i].tick_params(axis='y', color=lc[i], labelcolor = lc[i])
-        # axs[i].spines['left'].set_color(lc[i])#注意ax1是left
-        axs[i].spines['top'].set_visible(False)
-ax2.yaxis.tick_right()
-ax3.yaxis.tick_right()
-ax2.yaxis.set_label_position("right")
-ax3.yaxis.set_label_position("right")
-ax1.spines['right'].set_visible(False)
-ax2.spines['bottom'].set_visible(False)
-ax3.spines['bottom'].set_visible(False)
-ax2.get_xaxis().set_visible(False)
-ax3.get_xaxis().set_visible(False)
-# ax3.spines['bottom'].set_visible(False)
-ax1.set_xlabel('Year')
-ax1.xaxis.set_major_locator(MultipleLocator(1))
-# Rotate the tick labels and set their alignment. X轴标签旋转
-plt.setp(ax1.get_xticklabels(), rotation=45, ha="right",
-         rotation_mode="anchor")
-ax1.yaxis.set_major_locator(MultipleLocator(200))
-ax2.yaxis.set_major_locator(MultipleLocator(50))
-ax3.yaxis.set_major_locator(MultipleLocator(0.1))
-ax1.set_xlim(1999.5,2020.5)
-ax1.set_ylim(0,1150)
-ax2.set_ylim(150,300)
-ax3.set_ylim(0.2,0.4)
-# plt.legend(loc='lower left')
-# 图例
-lines = []
-labels = []
-for ax in fig.axes:
-    axLine, axLabel = ax.get_legend_handles_labels()
-    lines.extend(axLine)
-    labels.extend(axLabel)
-fig.legend(lines, labels, loc='upper right', bbox_to_anchor=(0.7, 0.19))  # 图例的位置，bbox_to_anchor=(0.5, 0.92),
-plt.subplots_adjust(left=-0.02,bottom=0.08,right=1.07,top=0.99,wspace=0.19,hspace=0.21)
 
 # plt.tight_layout()
-# plt.savefig(r'G:\1_BeiJingUP\AUGB\Pic\QTP均值+年际变化_'+(datetime.today().strftime("%y%m%d(%H%M%S)"))+'.jpg',dpi = 2000)
+# plt.savefig(r'G:\1_BeiJingUP\AUGB\Pic\QTP均值+年际变化_'+(datetime.today().strftime("%y%m%d(%H%M%S)"))+'.jpg',dpi = 2500)
 plt.show()
 
 
-
-print()
 
