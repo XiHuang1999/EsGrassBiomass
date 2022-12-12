@@ -76,6 +76,21 @@ def geo2imagexy(dataset, x, y):
     b = np.array([x - trans[0], y - trans[3]])
     return np.linalg.solve(a, b)  # 使用numpy的linalg.solve进行二元一次方程的求解
 
+
+def geo2imagexy_gdal3(dataset, x, y):
+    '''
+    根据GDAL的六 参数模型将给定的投影或地理坐标转为影像图上坐标（行列号）
+    :param dataset: GDAL地理数据
+    :param x: 投影或地理坐标x
+    :param y: 投影或地理坐标y
+    :return: 影坐标或地理坐标(x, y)对应的影像图上行列号(row, col)
+    '''
+    trans = dataset.GetGeoTransform()
+    a = np.array([[trans[1], trans[2]], [trans[4], trans[5]]])
+    b = np.array([x - trans[0], y - trans[3]])
+    return np.linalg.solve(a, b)  # 使用numpy的linalg.solve进行二元一次方程的求解
+
+
 def lonlat2imagexy(dataset, lon, lat):
     '''
     将经纬度坐标转为投影坐标（具体的投影坐标系由给定数据确定）
@@ -89,3 +104,16 @@ def lonlat2imagexy(dataset, lon, lat):
     # geo2imagexy
     a, b = geo2imagexy(dataset, a, b)
     return [a,b]
+
+def lonlat2imagexy_gdal3(dataset, x, y):
+    '''
+    根据GDAL的六 参数模型将给定的投影或地理坐标转为影像图上坐标（行列号）
+    :param dataset: GDAL地理数据
+    :param x: 投影或地理坐标x
+    :param y: 投影或地理坐标y
+    :return: 影坐标或地理坐标(x, y)对应的影像图上行列号(row, col)
+    '''
+    trans = dataset.GetGeoTransform()
+    a = np.array([[trans[1], trans[2]], [trans[4], trans[5]]])
+    b = np.array([x - trans[0], y - trans[3]])
+    return np.linalg.solve(a, b)  # 使用numpy的linalg.solve进行二元一次方程的求解
