@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# @Time : 2022/12/4 18:35
+# @Author : Xihuang O.Y.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 # @Time : 2022/10/13 11:22
 # @Author : Xihuang O.Y.
 
@@ -9,7 +13,7 @@ import os, sys, time, math
 from glob import glob
 import pandas as pd
 import numpy as np
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import seaborn as sns
@@ -157,13 +161,19 @@ for stepT in [2,3,4]:
     plt.rcParams['lines.markersize'] = 2.3
     plt.rcParams['font.size'] = 8
 
+    # 绘图参数
+    # Parameters: Colorbar分级。如下：
+    bins = [-1, 0, 50, 100, 200, 300, 500, 1000]  # colorbar的分级
+    nbin = len(bins) - 1
+    cmaps = mpl.cm.get_cmap('Spectral', nbin)  # 获取Cmap参数
+    norms = mpl.colors.BoundaryNorm(bins, nbin)  # 对Cmap的颜色进行归一化处理，用于分级
 
     # datadf[datadf.isna()]=-1
     vmins = [0,0,0,0]
     vmaxs = [500,1500,2500,1]
     txtl = ['(a)','(b)','(c)','(d)']
     fmt = ['%.0f','%.0f','%.0f','%.1f']
-    segN = [6,4,6,4]
+    segN = [6,6,6,6]
     # Mask Data
     # mask = pd.read_csv(
     #         r"G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\MetoAnalysis\Meto_Mask.csv",index_col=0)
@@ -173,10 +183,10 @@ for stepT in [2,3,4]:
     mask = mask[mask>20]  # mask : 为True的元素对应位置不会画出来（mask面具的意义）
     mask = mask.isna()  # mask : 为True的元素对应位置不会画出来（mask面具的意义）
 
-    ddata[mask] = np.nan
+    # ddata[mask] = np.nan
 
     for vi in range(len(keyName)):
-        ddata = dflist_[vi] # pd.DataFrame(dflist_[vi],dtype=np.float64)
+        ddata = dflist_[vi].copy() # pd.DataFrame(dflist_[vi],dtype=np.float64)
         # ddata = np.array(dflist_[vi], dtype=np.float64)
         fig = plt.figure(figsize=(7/2.54,6/2.54))   # axi = fig.add_subplots(111)
         axi = plt.gca().axes
@@ -192,13 +202,17 @@ for stepT in [2,3,4]:
         # 平滑处理 # Resample your data grid by a factor of 3 using cubic spline interpolation.
         ddata_sample = ddata  # scipy.ndimage.zoom(ddata, 1) # x,y = np.meshgrid(list(ddata.index),[int(s) for s in list(ddata.columns)])
         ddata_sample_mask = np.ma.array(ddata_sample, mask=mask)
-        cs = axi.contourf(X, Y, ddata_sample_mask, corner_mask=False)
+        cs = axi.contourf(X, Y, ddata_sample_mask, corner_mask=False,
+                          levels=np.linspace(vmins[vi], vmaxs[vi], segN[vi]),
+                          cmap='RdBu_r',vmin=vmins[vi],vmax=vmaxs[vi],
+                          )
         # ddata_sample[ddata_sample.isna()] = 1
-        contour = axi.contour(ddata_sample,
+        contour = axi.contour(cs,
                               np.linspace(vmins[vi], vmaxs[vi], segN[vi]),
                               corner_mask=False,
                               algorithm='serial',
                               colors='k')
+        plt.colorbar(cs, ax=axi)
         plt.clabel(contour, fontsize=8, colors='k', fmt=fmt[vi])
 
         plt.xlabel('Temperature',fontsize=8, color='k') #x轴label的文本和字体大小

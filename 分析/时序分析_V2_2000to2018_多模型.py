@@ -52,8 +52,21 @@ sys.path.append(r'E:\A_UCAS_Study\PythonWorkspace\EsGrassBiomass')      # 添加
 import EsRaster,readConfig
 
 '''时序均值计算'''
-keyName = [r'GLASS_1982_2018_1y_chinese_Tiff',r'GLOPEM-CEVSA_1980_2020_1y_chinese2_Tiff',r'MODIS_2000_2017_1y_chinese_Tiff',r'MuSyQ_1981_2018_1y_chinese_Tiff']
-filePath = r'G:\1_BeiJingUP\QTP_SST\Data\NPP\Tiff_Format'
+clname = r'TNPP'
+textx = [2000,2011,2006,2006,2003.75]
+texty = [775,788,781,670,615]
+# clname = r'BNPP'
+# textx = [2000,2003.75,2006,2006,2011]
+# texty = [568, 408, 574, 463, 581]
+# clname = r'fBNPP'
+# textx = [2000,2003.75,2006,2006,2011]
+# texty = [775,615,781,670,788]
+keyName = [r'GLASS',
+           r'GLOPEM-CEVSA',
+           r'MODIS',
+           r'MuSyQ',
+           r'BMA']
+filePath = r'G:\1_BeiJingUP\AUGB\Data\EveryModel_NPP_3_Nan'
 lucctif = r"G:\1_BeiJingUP\CommonData\China\CGrassChina_OnlyGrass1_Greater0.tif"
 A,B,lucc = EsRaster.read_img(lucctif)
 lucc = lucc.reshape(lucc.shape[0]*lucc.shape[1],)
@@ -68,8 +81,8 @@ for vi in range(len(keyName)):
     tplist_er = []
     for yr in range(stY,edY+1):
         # NPP
-        print(glob(filePath+os.sep+keyName[vi]+os.sep+r'*'+str(yr)+r'*.tif')[0])
-        img_proj,img_geotrans,img_data = EsRaster.read_img(glob(filePath+os.sep+keyName[vi]+os.sep+r'*'+str(yr)+r'*.tif')[0])
+        print(glob(filePath+os.sep+keyName[vi]+os.sep+clname+os.sep+r'*'+str(yr)+r'*.tif')[0])
+        img_proj,img_geotrans,img_data = EsRaster.read_img(glob(filePath+os.sep+keyName[vi]+os.sep+clname+os.sep+r'*'+str(yr)+r'*.tif')[0])
         imgdata1 = img_data.reshape((img_data.shape[0]*img_data.shape[1],))
         imgdata1[imgdata1<0] = np.nan
         # Mean
@@ -80,12 +93,15 @@ for vi in range(len(keyName)):
     # ereStc.append(tplist_er)
 # dataStc[3] = list(np.subtract([1]*len(dataStc[2]),dataStc[3]))
 
-# Normal Units
-for i in [0,2,3]:
-    dataStc[i] = [numb/0.45 for numb in dataStc[i]]
+dataStc1 = dataStc.copy()
+# dataStc[keyName.index('GLOPEM-CEVSA')] = [value/0.45 for value in dataStc[keyName.index('GLOPEM-CEVSA')]]
+
+# # Normal Units
+# for i in [0,2,3]:
+#     dataStc[i] = [numb/0.45 for numb in dataStc[i]]
 # Calc SE and Mean
 se = [np.std(data,ddof=0)/math.sqrt(len(data)) for data in zip(dataStc[0],dataStc[1],dataStc[2],dataStc[3])]
-dataStc.append([np.mean(data) for data in zip(dataStc[0],dataStc[1],dataStc[2],dataStc[3])])
+# dataStc.append([np.mean(data) for data in zip(dataStc[0],dataStc[1],dataStc[2],dataStc[3])])
 
 '''=========================================================================='''
 # here put the import lib
@@ -120,13 +136,11 @@ img1, = ax1.plot(yearList,dataStc[0],'*-',c=lc[0],ms=6, alpha=0.9, label=key[0])
 img2, = ax1.plot(yearList,dataStc[1],'<-',c=lc[1],ms=5, alpha=0.9,label=key[1])
 img3, = ax1.plot(yearList,dataStc[2],'s-',c=lc[2],ms=2.5, alpha=0.9,label=key[2])
 img4, = ax1.plot(yearList,dataStc[3],'d-',c=lc[3],ms=4, alpha=0.9,label=key[3])
-imgMean, = ax1.plot(yearList,dataStc[4],'.-',c='black',ms=4, alpha=0.8,label='Mean')
+imgMean, = ax1.plot(yearList,dataStc[4],'.-',c='black',ms=4, alpha=0.8,label=key[4])
 plt.fill_between(yearList,np.subtract(dataStc[4],se),np.add(dataStc[4],se)
                  ,color='gray',alpha=0.3)
 
 # 文字
-textx = [2000,2011,2006,2006,2011]
-texty = [550,564,472,445,485]
 for i in range(len(dataStc)):
     linreg = st.linregress(pd.Series(yearList, dtype=np.float64), pd.Series(dataStc[i], dtype=np.float64))
     x = np.linspace(min(yearList), max(yearList), 100)
@@ -143,14 +157,16 @@ for i in range(len(dataStc)):
 ax1.spines['right'].set_visible(False)
 ax1.spines['top'].set_visible(False)
 ax1.set_xlabel('Year')
-ax1.set_ylabel('TNPP')
+ax1.set_ylabel(clname)
 ax1.xaxis.set_major_locator(MultipleLocator(1))
 # Rotate the tick labels and set their alignment. X轴标签旋转
 plt.setp(ax1.get_xticklabels(), rotation=45, ha="right",
          rotation_mode="anchor")
 ax1.yaxis.set_major_locator(MultipleLocator(25))
 ax1.set_xlim(1999.5,2018.5)
-ax1.set_ylim(400,600)
+ax1.set_ylim(550,880)#TNPP
+# ax1.set_ylim(380,625)#BNPP
+# ax1.set_ylim(380,1300)#BMA-BNPP
 # 图例
 lines = []
 labels = []
@@ -162,7 +178,7 @@ fig.legend(lines, labels,ncol=5, loc='upper right',
            columnspacing=1,handletextpad=0.2, bbox_to_anchor=(0.87,0.98))
 plt.subplots_adjust(left=0.15,right=0.85,bottom=0.2,top=0.85,hspace=0.1)  #,wspace=0.19,left=0,bottom=0,right=1,top=1,
 # plt.tight_layout()
-plt.savefig(r'G:\1_BeiJingUP\AUGB\Pic\多模型年际变化_'+(datetime.today().strftime("%y%m%d(%H%M%S)"))+'.jpg',dpi = 1000)
+plt.savefig(r'G:\1_BeiJingUP\AUGB\Pic\多模型年际变化_'+clname+'_'+(datetime.today().strftime("%y%m%d(%H%M%S)"))+'.jpg',dpi = 1000)
 plt.show()
 
 

@@ -203,6 +203,7 @@ if __name__=="__main__":
     #          'Yearly_PRCP', 'Season1_PRCP', 'Season2_PRCP',
     #          'Yearly_SWRS', 'Season1_SWRS', 'Season2_SWRS',
     #          'Yearly_FPAR', 'Season1_FPAR', 'Season2_FPAR']
+    #         ['AGB', 'ID', 'LON', 'Parameters','Slope','Aspect','Soil_PH_h2o','Year','CGrass','Field1']]
     # allyr.columns = Ycols
     # allyr['NDVI'] = allyr['NDVI']*1.2/255 - 0.2
     # allyr.to_csv(r"G:\1_BeiJingUP\AUGB\Data\20220629\allyr_V2.csv")

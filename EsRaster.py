@@ -77,6 +77,36 @@ def write_img(filename,im_proj,im_geotrans,im_data):
             dataset.GetRasterBand(i + 1).WriteArray(im_data[i])
     del dataset
 
+
+def read_img_Dataset(filename):
+    """
+    filename: str,要读取的栅格文件
+    return: 函数输入图像所在的路径，输出图像的投影，仿射矩阵以及图像数组\n
+    """
+    dataset = gdal.Open(filename)
+    im_width = dataset.RasterXSize #栅格矩阵的列数
+    im_height = dataset.RasterYSize #栅格矩阵的行数
+    im_geotrans = dataset.GetGeoTransform() #仿射矩阵
+    im_proj = dataset.GetProjection() #地图投影
+    im_data = dataset.ReadAsArray(0,0,im_width,im_height)
+    # # If you have projection coordinates, you need to run the following two lines
+    # startY, startX = geo2lonlat(dataset,im_geotrans[0],im_geotrans[3])
+    # endY, endX = geo2lonlat(dataset,im_geotrans[0] + im_geotrans[1] * im_data.shape[1],im_geotrans[3] + im_geotrans[5] * im_data.shape[0])
+    #
+    # # Calculate Lon Lat Grid
+    # Lons = np.linspace(start=startX,    # 左上角x坐标
+    #                    stop=endX,       # 右下角x坐标 + 东西方向像素分辨率 * 列
+    #                    num=im_data.shape[1],
+    #                    endpoint=True)
+    # Lats = np.linspace(start=startY,    # 左上角y坐标
+    #                    stop=endY,       # 右下角y坐标 + 南北方向像素分辨率 * 行
+    #                    num=im_data.shape[0],
+    #                    endpoint=True)
+    # Lons, Lats = np.meshgrid(Lons, Lats)  # 构建经纬网
+    return dataset,im_proj,im_geotrans,im_data
+
+
+
 def SampleRaster(tifList, ptShp, siteName, nirCellNum=1, Scope=''):
     '''
     Using PtShp File to Sample Raster
@@ -197,7 +227,9 @@ def SampleRaster(tifList, ptShp, siteName, nirCellNum=1, Scope=''):
     return values
 
 
-def SampleRaster_gdal3(tifList, ptShp, siteName, nirCellNum=1, Scope=''):
+def SampleRaster_gdal3(tifList, ptShp, siteName, nirCellNum=1, Scope='',
+                       LonFieldName=r'Longitude', LatFieldName=r'Latitude',
+                       colName = ''):
     '''
     Using PtShp File to Sample Raster
     :param tifList: 栅格列表
@@ -244,8 +276,10 @@ def SampleRaster_gdal3(tifList, ptShp, siteName, nirCellNum=1, Scope=''):
 
     elif isinstance(ptShp, pd.DataFrame):
         station_list = list(ptShp.iloc[:, 0])
-        xValues = list(ptShp.iloc[:, 1])
-        yValues = list(ptShp.iloc[:, 2])
+        # xValues = list(ptShp.iloc[:, 1])
+        # yValues = list(ptShp.iloc[:, 2])
+        xValues = list(ptShp.loc[0:,LonFieldName])
+        yValues = list(ptShp.loc[0:,LatFieldName])
         ptNum = len(xValues)
 
     # 创建二维空列表
@@ -313,7 +347,10 @@ def SampleRaster_gdal3(tifList, ptShp, siteName, nirCellNum=1, Scope=''):
                     print('EsRaster Error！ Shp ID in ' + str(i))
                 del dt
         del dr
-    colmns = [tif.split(os.sep)[-2] + r'_' + os.path.basename(tif).split(r'_')[0] for tif in tifList]
+    if colName == '':
+        colmns = [tif.split(os.sep)[-2] + r'_' + os.path.basename(tif).split(r'_')[0] for tif in tifList]
+    else:
+        colmns = list(colName)
     values = pd.DataFrame(values, columns=colmns, index=list(ptShp.index))
     print()
     return values

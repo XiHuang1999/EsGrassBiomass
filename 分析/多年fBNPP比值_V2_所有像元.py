@@ -22,19 +22,19 @@ plt.rcParams['ytick.direction'] = 'in'
 plt.rc('font',family='Times New Roman')
 
 
-fBNPP_Path = r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\fBNPP'
-lucctif = r"G:\1_BeiJingUP\CommonData\China\CGrassChina_OnlyGrass1_Greater0.tif"
+fBNPP_Path = r'G:\1_BeiJingUP\AUGB\Data\EveryModel_NPP_3_Nan\BMA\fBNPP'
+lucctif = r"G:\1_BeiJingUP\CommonData\China\CGrass_China1km_8.tif"
 A,B,lucc = EsRaster.read_img(lucctif)
-excFile = r"G:\1_BeiJingUP\AUGB\Table\地下地上比.xls"
-exc = pd.read_excel(excFile)
-coll = list(exc.iloc[:,1])
+excFile = r"G:\1_BeiJingUP\AUGB\Table\CGrass草地类型_ReclassifyName.csv"
+exc = pd.read_csv(excFile,header=None)
+coll = list(exc.iloc[:,0])
 
 
 fb = []
-for lucci in range(1,17+1):
+for lucci in range(len(coll)):
     print(r'==>'+str(lucci))
     tpfb = []
-    for yr in range(2000,2020+1):
+    for yr in range(2000,2018+1):
         tif = glob(fBNPP_Path+os.sep+r'*'+str(yr)+r'*.tif')[0]
         A,B,img = EsRaster.read_img(tif)
         pixv = img[lucc == lucci]
@@ -44,10 +44,7 @@ for lucci in range(1,17+1):
     fb.append(tpfb)
 fb = pd.DataFrame(fb).T #
 fb.columns=coll[0:fb.shape[1]]
-cgrass = ['高寒荒漠草原类', '高寒荒漠类', '高寒草甸草原类', '高寒草甸类', '高寒草原类',
-          '热性草丛类', '热性灌草丛类',
-          '温性荒漠类', '温性草原化荒漠类', '温性荒漠草原类', '温性草甸草原类', '温性草原类', '温性山地草甸类',
-          '暖性草丛类', '暖性灌草丛类', '低地草甸类', '沼泽类']
+cgrass = coll
 fb1 = fb[cgrass]
 fb = fb1
 
@@ -57,6 +54,7 @@ for l in list(fb.values):
     fbmean+=(list(l))
 fbmean = np.mean(fbmean)
 
+print(coll)
 #用matplotlib来画出箱型图
 fig = plt.figure(figsize=(14/2.54,7/2.54))
 plt.boxplot(x=fb,labels=coll[0:17],whis=1.5,widths=0.5,\

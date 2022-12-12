@@ -3,7 +3,7 @@
 # @Time : 2022/9/3 19:07
 # @Author : Xihuang O.Y.
 '''
-使用Weight集成
+使用GLCV-TNPP 和 RF5-ANPP 计算BNPP
 '''
 import pandas as pd
 import numpy as np

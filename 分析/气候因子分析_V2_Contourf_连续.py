@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Time : 2022/10/13 11:22
+# @Time : 2022/12/4 18:58
 # @Author : Xihuang O.Y.
 
 import pandas as pd
@@ -9,7 +9,7 @@ import os, sys, time, math
 from glob import glob
 import pandas as pd
 import numpy as np
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import seaborn as sns
@@ -83,48 +83,48 @@ for stepT in [2,3,4]:
     #                       +r'_20221203'+r'.csv')
     #     time.sleep(60)
 
-    '''读取Excel'''
-    dflist = []
-    for vi in range(len(keyName)):
-        dfi = pd.read_csv(r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\MetoAnalysis\Meto_'
-                          +keyName[vi]+r'_Tstep'+str(stepT)
-                          +r'_20221203'+r'.csv',
-                            index_col=0)
-        for T in range(stT, edT + 1, stepT):
-            print(T,end=r',')
-            for P in range(stP, edP + 1, stepP):
-                exec('dfi.iloc[int((P-stP)/stepP),int((T-stT)/stepT)]=' + dfi.iloc[
-                    int((P - stP) / stepP), int((T - stT) / stepT)])
-                # if (dfi.iloc[int((P-stP)/stepP),int((T-stT)/stepT)])[-1] != r']':
-                #     exec('dfi.iloc[int((P-stP)/stepP),int((T-stT)/stepT)]='+dfi.iloc[int((P-stP)/stepP),int((T-stT)/stepT)]+r']')
-                # else:
-                #     exec('dfi.iloc[int((P-stP)/stepP),int((T-stT)/stepT)]='+dfi.iloc[int((P-stP)/stepP),int((T-stT)/stepT)])
-        dflist.append(dfi)
-
-    '''计算均值'''
-    dflist_ = []
-    dflist_count_ = []
-    for dfi in dflist:
-        # set df data
-        df = pd.DataFrame([[0.0 for a in range(stT, edT + 1, stepT)] for yr in range(stP, edP + 1, stepP)])
-        df.set_index(y, inplace=True)
-        df.columns = x
-        df_count = df.copy()
-        for T in range(stT, edT + 1, stepT):
-            print(T,end=',')
-            for P in range(stP, edP + 1, stepP):
-                l = dfi.iloc[int((P - stP) / stepP), int((T - stT) / stepT)]
-                lstd = np.std(l)
-                lmean = np.mean(l)
-                value = np.where((l > (lmean - 2 * lstd)) & (l < (lmean + 2 * lstd)), l, np.nan)
-                df_count.iloc[int((P - stP) / stepP), int((T - stT) / stepT)] = len(value)
-                value = np.nanmean(value)
-                # if np.isnan(value):
-                #     value = -9999
-                # else:
-                df.iloc[int((P - stP) / stepP), int((T - stT) / stepT)] = value
-        dflist_.append(df)
-        dflist_count_.append(df_count)
+    # '''读取Excel'''
+    # dflist = []
+    # for vi in range(len(keyName)):
+    #     dfi = pd.read_csv(r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\MetoAnalysis\Meto_'
+    #                       +keyName[vi]+r'_Tstep'+str(stepT)
+    #                       +r'_20221203'+r'.csv',
+    #                         index_col=0)
+    #     for T in range(stT, edT + 1, stepT):
+    #         print(T,end=r',')
+    #         for P in range(stP, edP + 1, stepP):
+    #             exec('dfi.iloc[int((P-stP)/stepP),int((T-stT)/stepT)]=' + dfi.iloc[
+    #                 int((P - stP) / stepP), int((T - stT) / stepT)])
+    #             # if (dfi.iloc[int((P-stP)/stepP),int((T-stT)/stepT)])[-1] != r']':
+    #             #     exec('dfi.iloc[int((P-stP)/stepP),int((T-stT)/stepT)]='+dfi.iloc[int((P-stP)/stepP),int((T-stT)/stepT)]+r']')
+    #             # else:
+    #             #     exec('dfi.iloc[int((P-stP)/stepP),int((T-stT)/stepT)]='+dfi.iloc[int((P-stP)/stepP),int((T-stT)/stepT)])
+    #     dflist.append(dfi)
+    #
+    # '''计算均值'''
+    # dflist_ = []
+    # dflist_count_ = []
+    # for dfi in dflist:
+    #     # set df data
+    #     df = pd.DataFrame([[0.0 for a in range(stT, edT + 1, stepT)] for yr in range(stP, edP + 1, stepP)])
+    #     df.set_index(y, inplace=True)
+    #     df.columns = x
+    #     df_count = df.copy()
+    #     for T in range(stT, edT + 1, stepT):
+    #         print(T,end=',')
+    #         for P in range(stP, edP + 1, stepP):
+    #             l = dfi.iloc[int((P - stP) / stepP), int((T - stT) / stepT)]
+    #             lstd = np.std(l)
+    #             lmean = np.mean(l)
+    #             value = np.where((l > (lmean - 2 * lstd)) & (l < (lmean + 2 * lstd)), l, np.nan)
+    #             df_count.iloc[int((P - stP) / stepP), int((T - stT) / stepT)] = len(value)
+    #             value = np.nanmean(value)
+    #             # if np.isnan(value):
+    #             #     value = -9999
+    #             # else:
+    #             df.iloc[int((P - stP) / stepP), int((T - stT) / stepT)] = value
+    #     dflist_.append(df)
+    #     dflist_count_.append(df_count)
 
     '''保存/读取均值'''
     dflist_ = []
@@ -157,26 +157,36 @@ for stepT in [2,3,4]:
     plt.rcParams['lines.markersize'] = 2.3
     plt.rcParams['font.size'] = 8
 
+    # 绘图参数
+    # Parameters: Colorbar分级。如下：
+    bins = [-1, 0, 50, 100, 200, 300, 500, 1000]  # colorbar的分级
+    nbin = len(bins) - 1
+    cmaps = mpl.cm.get_cmap('Spectral', nbin)  # 获取Cmap参数
+    norms = mpl.colors.BoundaryNorm(bins, nbin)  # 对Cmap的颜色进行归一化处理，用于分级
 
     # datadf[datadf.isna()]=-1
-    vmins = [0,0,0,0]
-    vmaxs = [500,1500,2500,1]
+    vmins = [0,0,0,0.3]
+    vmaxs = [500,1500,2500,0.8]
+    segN = [6,6,6,6]
+    contourSep = [[0,100,200,300,400],
+                  [200,600,1000,1400],
+                  [500,1000,1500,2000],
+                  [0.45,0.6,0.75]]
+    fmt = ['%.0f','%.0f','%.0f','%.2f']
     txtl = ['(a)','(b)','(c)','(d)']
-    fmt = ['%.0f','%.0f','%.0f','%.1f']
-    segN = [6,4,6,4]
+
     # Mask Data
     # mask = pd.read_csv(
     #         r"G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\MetoAnalysis\Meto_Mask.csv",index_col=0)
     # mask = mask.isna() # mask : 为True的元素对应位置不会画出来（mask面具的意义）
     mask = pd.read_csv(
         r"G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\MetoAnalysis\Meto_CountfBNPP_Mean_Tstep2_20221203.csv", index_col=0)
-    mask = mask[mask>20]  # mask : 为True的元素对应位置不会画出来（mask面具的意义）
+    mask = mask[mask>50]  # mask : 为True的元素对应位置不会画出来（mask面具的意义）
     mask = mask.isna()  # mask : 为True的元素对应位置不会画出来（mask面具的意义）
 
-    ddata[mask] = np.nan
-
+    # 开始绘图
     for vi in range(len(keyName)):
-        ddata = dflist_[vi] # pd.DataFrame(dflist_[vi],dtype=np.float64)
+        ddata = dflist_[vi].copy() # pd.DataFrame(dflist_[vi],dtype=np.float64)
         # ddata = np.array(dflist_[vi], dtype=np.float64)
         fig = plt.figure(figsize=(7/2.54,6/2.54))   # axi = fig.add_subplots(111)
         axi = plt.gca().axes
@@ -192,44 +202,37 @@ for stepT in [2,3,4]:
         # 平滑处理 # Resample your data grid by a factor of 3 using cubic spline interpolation.
         ddata_sample = ddata  # scipy.ndimage.zoom(ddata, 1) # x,y = np.meshgrid(list(ddata.index),[int(s) for s in list(ddata.columns)])
         ddata_sample_mask = np.ma.array(ddata_sample, mask=mask)
-        cs = axi.contourf(X, Y, ddata_sample_mask, corner_mask=False)
-        # ddata_sample[ddata_sample.isna()] = 1
-        contour = axi.contour(ddata_sample,
-                              np.linspace(vmins[vi], vmaxs[vi], segN[vi]),
-                              corner_mask=False,
-                              algorithm='serial',
+        cs = axi.contourf(X, Y, ddata_sample_mask, corner_mask=False,
+                          norm=mpl.colors.Normalize(vmin=vmins[vi], vmax=vmaxs[vi]),
+                          levels=np.linspace(vmins[vi], vmaxs[vi], 400),
+                          cmap='Spectral',vmin=vmins[vi], vmax=vmaxs[vi]
+                          )
+        contour = axi.contour(X, Y, ddata_sample_mask,
+                              contourSep[vi],
+                              corner_mask=False, #algorithm='serial',
                               colors='k')
-        plt.clabel(contour, fontsize=8, colors='k', fmt=fmt[vi])
+        plt.clabel(contour, fontsize=8, colors='k', fmt=fmt[vi],inline=True)#manual=True)
+        cbar = plt.colorbar(cs, ax=axi, ticks=np.linspace(vmins[vi], vmaxs[vi], segN[vi])) # vmin=vmins[vi],vmax=vmaxs[vi])
+        # cbar = axi.collections[0].colorbar  # 显示colorbar
+        # cbar = plt.colorbar(h)  # 显示colorbar
+        cbar.set_ticks(np.linspace(vmins[vi], vmaxs[vi], segN[vi]))
+        # cbar.outline.set_linewidth(0.01)
+        # cbar.dividers.set_linewidth(0)
+        # cbar.outline.set_visible(False)
+        # tick_locator = ticker.MaxNLocator(nbins=5)  # colorbar上的刻度值个数
+        # cb1.locator = tick_locator
 
         plt.xlabel('Temperature',fontsize=8, color='k') #x轴label的文本和字体大小
         plt.ylabel('Precipitation',fontsize=8, color='k') #y轴label的文本和字体大小
-        # axi.set_xticks(x)
+        axi.set_xticks(X[0][::2])
         # axi.set_xticklabels(x, rotation='horizontal')
         plt.title(keyName[vi],fontsize=8) #图片标题文本和字体大小
 
         # Set Parameters
-        axi.text(1,27,txtl[vi])
+        axi.text(-14,2800,txtl[vi])
         sns.despine(ax=axi, top=False, right=False, left=False, bottom=False)
-        # cbar = axi.collections[0].colorbar  # 显示colorbar
-        # cbar = plt.colorbar(h)  # 显示colorbar
-        # cbar.set_ticks(np.linspace(0,2000,5))
-        # cbar.outline.set_linewidth(0.01)
-        # cbar.dividers.set_linewidth(0)
-        # cbar.outline.set_visible(False)
         plt.tight_layout()
-        # plt.savefig(r'G:\1_BeiJingUP\AUGB\Pic\Meto\气温降水-Heatmap-'+keyName[vi]+'-'+(datetime.today().strftime("%y%m%d(%H%M%S)"))+'.jpg',dpi = 800)
+        plt.savefig(r'G:\1_BeiJingUP\AUGB\Pic\Meto\气温降水-Heatmap-'+keyName[vi]+'-'+(datetime.today().strftime("%y%m%d(%H%M%S)"))+'.jpg',dpi = 800)
         plt.show()
 
-        # X, Y = np.meshgrid(x, y)
-        # plt.figure(figsize=(7/2.54,6/2.54))
-        # # 'Spectral','RdYlBu' #algorithm{'mpl2005', 'mpl2014', 'serial', 'threaded'},
-        # plt.contourf(X, Y, ddata,cmap='Greens',algorithm='serial')
-        # plt.colorbar()
-        # plt.xlabel('Temperature',fontsize=8, color='k') #x轴label的文本和字体大小
-        # plt.ylabel('Precipitation',fontsize=8, color='k') #y轴label的文本和字体大小
-        # plt.title(keyName[vi],fontsize=8) #图片标题文本和字体大小
-        # plt.text(-8,2600,txtl[vi])
-        # plt.tight_layout()
-        # plt.savefig(r'G:\1_BeiJingUP\AUGB\Pic\Meto\气温降水-Contourf-'+keyName[vi]+'-'+(datetime.today().strftime("%y%m%d(%H%M%S)"))+'.jpg',dpi = 800)
-        # plt.show()
 print()

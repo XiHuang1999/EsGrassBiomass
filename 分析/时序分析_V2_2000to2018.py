@@ -9,6 +9,7 @@ import os, sys, time, math, random
 from glob import glob
 import pandas as pd
 import numpy as np
+from scipy import stats
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
@@ -53,7 +54,8 @@ import EsRaster,readConfig
 
 '''时序均值计算'''
 keyName = [r'TNPP',r'BNPP',r'ANPP',r'fBNPP']
-filePath = r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan'
+filePath = r'G:\1_BeiJingUP\AUGB\Data\EveryModel_NPP_3_Nan\BMA'
+alpha = 0.95
 stY = 2000
 edY = 2018
 yearList = [yr for yr in range(stY,edY+1)]
@@ -70,11 +72,20 @@ for vi in range(len(keyName)):
         imgdata1[imgdata1<0] = np.nan
         # Mean
         dt = imgdata1[~np.isnan(imgdata1)]
-        tplist.append(np.nanmean(dt))
+        mn = np.nanmean(dt)
+        tplist.append(mn)
         # CI
-        se = bootstrap(dt, 500, 0.95)
-        tplist_er.append(se) #/math.sqrt(len(imgdata1))
-        print(se)
+        dt = imgdata1[~np.isnan(imgdata1)]
+        df = len(dt) - 1
+        ci = stats.t.interval(alpha, df, loc=np.mean(dt), scale=stats.sem(dt))
+        tplist_er.append(list(ci))
+        print(ci)
+        # # SE
+        # SD_S = np.nanstd(imgdata1,ddof=1)
+        # n = len(imgdata1[~np.isnan(imgdata1)])
+        # se = SD_S/math.sqrt(n)      #np.nanvar(imgdata1)#bootstrap(dt, 500, 0.95)
+        # tplist_er.append([mn-se,mn+se])        #/math.sqrt(len(imgdata1))
+        # print(se)
     dataStc.append(tplist)
     ereStc.append(tplist_er)
 # dataStc[3] = list(np.subtract([1]*len(dataStc[2]),dataStc[3]))
@@ -203,7 +214,7 @@ plt.fill_between(yearList,[ereStc[3][ii][0] for ii in range(len(ereStc[0]))],[er
 axs = [ax1,ax1,ax2,ax3]
 imgs = [img1,img2,img3,img4]
 textx = [2009,2006,2006,2009]
-texty = [785,560,210,0.7]
+texty = [720,510,210,0.67]
 # 文字
 for i in range(len(axs)):
     linreg = st.linregress(pd.Series(yearList, dtype=np.float64), pd.Series(dataStc[i], dtype=np.float64))
@@ -212,10 +223,10 @@ for i in range(len(axs)):
     axs[i].plot(x,y,'--',c=lc[i],lw=1)
     print(linreg)
     if linreg[0]<0.01:
-        axs[i].text(textx[i],texty[i], 'Slope=%.3f, R²=%.2f' % (linreg[0], linreg[2] ** 2), ha='left', va='bottom',
+        axs[i].text(textx[i],texty[i], 'Slope=%.3f, R²=%.3f' % (linreg[0], linreg[2] ** 2), ha='left', va='bottom',
                     c=lc[i]) # 位置：max(x) -0.2, max(dataStc[i][-5:])
     else:
-        axs[i].text(textx[i], texty[i], 'Slope=%.2f, R²=%.2f' % (linreg[0], linreg[2] ** 2), ha='left', va='bottom',
+        axs[i].text(textx[i], texty[i], 'Slope=%.2f$^{*}$, R²=%.2f' % (linreg[0], linreg[2] ** 2), ha='left', va='bottom',
                     c=lc[i])  # 位置：max(x) -0.2, max(dataStc[i][-5:])
 
 # 轴颜色
@@ -241,7 +252,7 @@ ax1.xaxis.set_major_locator(MultipleLocator(1))
 # Rotate the tick labels and set their alignment. X轴标签旋转
 plt.setp(ax1.get_xticklabels(), rotation=45, ha="right",
          rotation_mode="anchor")
-ax1.yaxis.set_major_locator(MultipleLocator(200))
+ax1.yaxis.set_major_locator(MultipleLocator(100))
 ax2.yaxis.set_major_locator(MultipleLocator(50))
 ax3.yaxis.set_major_locator(MultipleLocator(0.1))
 ax1.set_xlim(1999.5,2018.5)
@@ -259,7 +270,7 @@ for ax in fig.axes:
 fig.legend(lines, labels,ncol=4, loc='upper right', bbox_to_anchor=(0.8,0.98))  # 图例的位置，bbox_to_anchor=(0.5, 0.92),
 plt.subplots_adjust(left=0.15,right=0.85,bottom=0.2,top=0.85,hspace=0.1)  #,wspace=0.19,left=0,bottom=0,right=1,top=1,
 # plt.tight_layout()
-# plt.savefig(r'G:\1_BeiJingUP\AUGB\Pic\QTP均值+年际变化_'+(datetime.today().strftime("%y%m%d(%H%M%S)"))+'.jpg',dpi = 1000)
+plt.savefig(r'G:\1_BeiJingUP\AUGB\Pic\QTP均值+年际变化_'+(datetime.today().strftime("%y%m%d(%H%M%S)"))+'.jpg',dpi = 1000)
 plt.show()
 
 

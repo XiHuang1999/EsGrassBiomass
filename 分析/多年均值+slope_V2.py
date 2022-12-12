@@ -36,16 +36,16 @@ import EsRaster,readConfig
 '''参数初始化设置'''
 # region Parameters
 # tif相关参数
-tif = [r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\Out_Mean\ANPPMean_2000to2020_Proj.tif',
-       r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\Out_Mean\BNPPMean_2000to2020_Proj.tif',
-       r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\Out_Mean\TNPPMean_2000to2020_Proj.tif',
-       r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\Out_Mean\fBNPPMean_2000to2020_Proj.tif',
-       r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\Out_Slope\ANPP_2000to2020_slope_Proj.tif',
-       r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\Out_Slope\BNPP_2000to2020_slope_Proj.tif',
-       r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\Out_Slope\TNPP_2000to2020_slope_Proj.tif',
-       r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan\Out_Slope\fBNPP_2000to2020_slope_Proj.tif']
-CHNshp = r'G:\1_BeiJingUP\CommonData\标准-2020年中国行政区划边界-省、市-Shp\2020年中国行政区划边界-省、市-Shp\全国行政边界\全国无子区域.shp'
-NHshp = r'G:\1_BeiJingUP\CommonData\标准-2020年中国行政区划边界-省、市-Shp\2020年中国行政区划边界-省、市-Shp\全国行政边界\南沙群岛海上国境线.shp'
+tif = [r'G:\1_BeiJingUP\AUGB\Data\EveryModel_NPP_3_Nan\AnalysisBMA_Mean_Slp\ANPPMean_2000to2018_Proj.tif',
+       r'G:\1_BeiJingUP\AUGB\Data\EveryModel_NPP_3_Nan\AnalysisBMA_Mean_Slp\BNPPMean_2000to2018_Proj.tif',
+       r'G:\1_BeiJingUP\AUGB\Data\EveryModel_NPP_3_Nan\AnalysisBMA_Mean_Slp\TNPPMean_2000to2018_Proj.tif',
+       r'G:\1_BeiJingUP\AUGB\Data\EveryModel_NPP_3_Nan\AnalysisBMA_Mean_Slp\fBNPPMean_2000to2018_Proj.tif',
+       r'G:\1_BeiJingUP\AUGB\Data\EveryModel_NPP_3_Nan\AnalysisBMA_Mean_Slp\ANPP_2000to2018_slope_Proj.tif',
+       r'G:\1_BeiJingUP\AUGB\Data\EveryModel_NPP_3_Nan\AnalysisBMA_Mean_Slp\BNPP_2000to2018_slope_Proj.tif',
+       r'G:\1_BeiJingUP\AUGB\Data\EveryModel_NPP_3_Nan\AnalysisBMA_Mean_Slp\TNPP_2000to2018_slope_Proj.tif',
+       r'G:\1_BeiJingUP\AUGB\Data\EveryModel_NPP_3_Nan\AnalysisBMA_Mean_Slp\fBNPP_2000to2018_slope_Proj.tif']
+CHNshp = r'G:\1_BeiJingUP\CommonData\中国地图-审图号GS(2019)1822号-shp格式\中国地图-审图号GS(2019)1822号-shp格式\2019中国地图-审图号GS(2019)1822号\中国轮廓线_WGS84.shp'
+NHshp = r'G:\1_BeiJingUP\CommonData\中国地图-审图号GS(2019)1822号-shp格式\中国地图-审图号GS(2019)1822号-shp格式\2019中国地图-审图号GS(2019)1822号\九段线_WGS84.shp'
 QTPshp = r'G:\1_BeiJingUP\CommonData\QTP\QTP_WGS84.shp'
 Alberts_China = ccrs.AlbersEqualArea(central_longitude=110, central_latitude=0, standard_parallels=(25, 47))
 tifRange = [0,150]
