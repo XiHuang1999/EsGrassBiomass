@@ -64,3 +64,23 @@ for cc in dynamicParasD:
 bb.to_excel(r'G:\1_BeiJingUP\AUGB\RatioAB\Data_S1\Data_S1\Sample_Select_NPP.xlsx')
 
 ''''''
+# xy = np.vstack([y_train, outResults1])
+    # z = gaussian_kde(xy)(xy)
+    # idx = z.argsort()
+    # linreg = st.linregress(pd.Series(y_train, dtype=np.float64), pd.Series(outResults1, dtype=np.float64))
+    # pltx = [x for x in np.linspace(start=0, stop=max(y_train), num=1000)]
+    # plty = [linreg.slope * x + linreg.intercept for x in pltx]
+    # f, ax = plt.subplots(figsize=(6, 6))
+    # plt.plot(pltx, plty, '-', color='red', alpha=0.8, linewidth=2, label='Fitting Line')    # color='#4169E1'
+    # plt.plot(pltx, pltx, '-', color='black', alpha=0.8, linewidth=2, label='1:1')
+    # plt.scatter(y_train, outResults1,c=z,s=1.3,cmap='Spectral')
+    # plt.text(400,235,r'y = '+str('%.2f' % linreg.slope)+r'*x + '+str('%.2f' % linreg.intercept)+
+    #          '\n'+r'R Square = '+str('%.2f' % (linreg.rvalue**2))+
+    #          '\n'+r'P Value = '+str('%.2f' % linreg.pvalue)
+    #          ,fontsize=8,color = "r",fontweight='bold')
+    # plt.subplots_adjust(left=.1, right=0.95, bottom=0.22, top=0.95)
+    # plt.xlabel('AGB Site Value')  # 添加x轴和y轴标签
+    # plt.ylabel('Model Value')
+    # # plt.savefig(r'G:\1_BeiJingUP\AUGB\Data\20220629\Results'+os.sep+r'PIC'+os.sep+'RF_results.png',dpi=500,bbox_inches='tight')#, transparent=True
+    # plt.show()
+    # endregion
