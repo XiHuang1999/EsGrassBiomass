@@ -337,12 +337,17 @@ def SampleRaster_gdal3(tifList, ptShp, siteName, nirCellNum=1, Scope='',
                 if dt is None:
                     print()
                 valueList = dt.flatten()
+                print(valueList)
                 # 判断取值范围
                 if Scope == '':
                     values[i][tif_i] = valueList.mean()
                 elif Scope == '>0':
                     valueList = valueList[valueList > 0]
                     values[i][tif_i] = valueList.mean()
+                elif Scope == 'NotNone':
+                    #valueList = valueList[valueList > 0]
+                    #print(np.nanmean(np.array(valueList)))
+                    values[i][tif_i] = np.nanmean(np.array(valueList))
                 else:
                     print('EsRaster Error！ Shp ID in ' + str(i))
                 del dt
