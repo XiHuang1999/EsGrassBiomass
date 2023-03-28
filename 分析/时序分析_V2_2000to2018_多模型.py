@@ -48,7 +48,7 @@ from tqdm import tqdm
 #     higher = auc_sample_arr_sorted[k2]
 #     return lower, higher
 
-sys.path.append(r'E:\A_UCAS_Study\PythonWorkspace\EsGrassBiomass')      # 添加函数文件位置
+sys.path.append(r'D:\Pycharm\PyCharmPythonFiles\EsGrassBiomass')      # 添加函数文件位置
 import EsRaster,readConfig
 
 '''时序均值计算'''

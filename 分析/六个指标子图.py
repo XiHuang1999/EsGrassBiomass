@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Time : 2022/9/11 11:34
-# @Author : Xihuang O.Y.
+# @Time ： 2023/2/27 08:49:46
+# @IDE ：PyCharm
+# @Author : Xihuang Ouyang
+
 
 import pandas as pd
 import numpy as np
@@ -20,6 +22,17 @@ from tqdm import tqdm
 def average(data):
     return sum(data) / len(data)
 
+from scipy import stats
+####计算置信区间
+def CI(array):
+    averageValue = np.mean(array)
+    print("样本均值为：", averageValue)
+    standardError = stats.sem(array)
+    print("样本标准误差为：", standardError)
+
+    a = averageValue - 1.96 * standardError
+    b = averageValue + 1.96 * standardError
+    return a,b
 
 def bootstrap(data, B, c):
     """
@@ -53,7 +66,7 @@ sys.path.append(r'D:\Pycharm\PyCharmPythonFiles\EsGrassBiomass')      # 添加�
 import EsRaster,readConfig
 
 '''时序均值计算'''
-keyName = [r'TNPP',r'BNPP',r'ANPP',r'fBNPP']
+keyName = [r'ANPP',r'BNPP',r'TNPP',r'fBNPP']
 filePath = r'G:\1_BeiJingUP\AUGB\Data\EveryModel_NPP_3_Nan\BMA'
 climatePath = r'G:\1_BeiJingUP\AUGB\Data\20220629\Results'
 cliName = [r'TAVG0',r'PRCP0']
@@ -103,6 +116,7 @@ for vi in range(len(cliName)):
         # Climate
         print(glob(climatePath+os.sep+cliName[vi]+os.sep+r'*'+str(yr)+r'*.tif')[0])
         img_proj,img_geotrans,img_data = EsRaster.read_img(glob(climatePath+os.sep+cliName[vi]+os.sep+r'*'+str(yr)+r'*.tif')[0])
+        img_data = img_data/10
         imgdata1 = img_data.reshape((img_data.shape[0]*img_data.shape[1],))
         imgdata1[imgdata1<=-9999] = np.nan
         imgdata1[np.isnan(fbnpp)] = np.nan
@@ -205,7 +219,6 @@ from scipy import interpolate
 # plt.tight_layout()
 # plt.savefig(r'G:\1_BeiJingUP\AUGB\Pic\QTP均值年际变化_Style1_'+(datetime.now().strftime("%H-%M-%S"))+'.png',dpi = 600)
 # plt.show()
-
 
 
 ###=================================='''图样式二'''================================================
@@ -312,5 +325,76 @@ plt.subplots_adjust(left=0.15,right=0.85,bottom=0.2,top=0.85,hspace=0.1)  #,wspa
 plt.show()
 
 
+###=================================='''图样式三'''================================================
 
+def startP(p_):
+    if linreg.pvalue<=0.001:
+        pstart = '$^{***}$'
+    elif linreg.pvalue<=0.01:
+        pstart = '$^{**}$'
+    elif linreg.pvalue <= 0.05:
+        pstart = '$^{*}$'
+    else:
+        pstart = ''
+    print(linreg)
+    return pstart
+
+plt.rcParams['lines.linewidth'] = 1
+plt.rcParams['lines.color'] = 'black'
+plt.rcParams['font.size'] = 8
+plt.rcParams['lines.markersize'] = 2
+plt.rcParams['xtick.direction'] = 'in'
+plt.rc('font',family='Times New Roman')
+
+fig = plt.figure(figsize=(18/2.54,9/2.54))  # 创建Figure对象
+yrs = np.arange(2000,2018+1,1)
+
+var = keyName+['MAT','MAP']
+for i in range(0,6):
+
+    figi = 230+i+1
+    ax = plt.subplot(figi)
+
+    if var[i] == 'fBNPP':
+        ax.set_ylim(0.58,0.65)
+        sep = 2013
+        linreg_ = st.linregress(pd.Series(yrs[:sep-stY+1], dtype=np.float64), pd.Series(dataStc[i][:sep-stY+1], dtype=np.float64))
+        pltx_ = np.linspace(start=min(yrs), stop=sep, num=100)
+        plty_ = [linreg_.slope * x + linreg_.intercept for x in pltx_]
+        ax.plot(pltx_, plty_, '--', color='gray', alpha=0.8, linewidth=1, label=r'Slope = ' + "%.2f" % linreg_.slope + "g/m\u00b2/yr \n P = " + "%.2f" % linreg_.pvalue)  # color='#4169E1'
+        ax.text(2000.3, 0.582,
+                '2000-2013:\nSlope = ' + "%.3f" % linreg_.slope + startP(linreg_.pvalue) +
+                '\nR$^{2}$ = %.2f' % (linreg_.rvalue ** 2), linespacing=1.1)  # " g/m\u00b2/yr"
+        print(linreg_)
+        linreg_ = st.linregress(pd.Series(yrs[sep-stY:], dtype=np.float64), pd.Series(dataStc[i][sep-stY:], dtype=np.float64))
+        pltx_ = np.linspace(start=sep, stop=max(yrs), num=100)
+        plty_ = [linreg_.slope * x + linreg_.intercept for x in pltx_]
+        ax.plot(pltx_, plty_, '--', color='gray', alpha=0.8, linewidth=1, label=r'Slope = ' + "%.2f" % linreg_.slope + "g/m\u00b2/yr \n P = " + "%.2f" % linreg_.pvalue)  # color='#4169E1'
+        print(linreg_)
+        ax.text(2009, 0.582,
+                '2013-2018:\nSlope = ' + "%.3f" % linreg_.slope + startP(linreg_.pvalue) +
+                '\nR$^{2}$ = %.2f' % (linreg_.rvalue ** 2), linespacing=1.1)  # " g/m\u00b2/yr"
+
+    linreg = st.linregress(pd.Series(yrs, dtype=np.float64), pd.Series(dataStc[i], dtype=np.float64))
+    pltx = [x for x in np.linspace(start=min(yrs), stop=max(yrs), num=100)]
+    plty = [linreg.slope * x + linreg.intercept for x in pltx]
+    ax.plot(yrs, dataStc[i], 'o-')
+    ax.plot(pltx, plty, '--', color='black', alpha=0.8, linewidth=1, label=r'Slope = ' + "%.2f" % linreg.slope  + "g/m\u00b2/yr \n P = " + "%.2f" % linreg.pvalue)    # color='#4169E1'
+    ax.set_ylabel(var[i],labelpad=0) #X轴标签
+    ax.set_xlabel("year",labelpad=0) #X轴标签
+
+    ax.text(2000,ax.get_ylim()[0]+(ax.get_ylim()[1]-ax.get_ylim()[0])*8.1/10,
+            r'('+chr(97+i)+')  Slope = ' + "%.2f" % linreg.slope + startP(linreg.pvalue)+'\n'+
+            '       R$^{2}$ = %.2f' % (linreg.rvalue**2)
+            ,linespacing=1.1) #" g/m\u00b2/yr"
+
+plt.subplots_adjust(left=0.06, right=0.98, bottom=0.09, top=0.97, wspace=0.2, hspace=0.2)
+# plt.subplots_adjust(wspace=0.3, hspace=0.3)
+# plt.subplots_adjust(left = 0, wspace=0.3, hspace=0.3)
+# plt.tight_layout()
+# endregion
+
+plt.savefig(r'G:\1_BeiJingUP\AUGB\Data\20220629\Results\PIC'+os.sep+'六个指标年际动态_'+(datetime.now().strftime("%H-%M-%S"))+'.svg'
+            ,dpi=1000,bbox_inches='tight',format='svg',transparency=True)#, transparent=True
+plt.show()
 print()

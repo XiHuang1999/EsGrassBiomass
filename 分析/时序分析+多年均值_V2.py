@@ -14,7 +14,7 @@ from datetime import datetime
 import matplotlib.gridspec as gridspec
 from matplotlib.pyplot import MultipleLocator
 import matplotlib as mpl
-from adjustText import adjust_text
+# from adjustText import adjust_text
 from scipy import interpolate
 import matplotlib
 import matplotlib.pyplot as plt
@@ -30,14 +30,14 @@ import matplotlib.ticker as mticker
 
 # matplotlib.rcParams['backend'] = 'SVG'
 
-sys.path.append(r'E:\A_UCAS_Study\PythonWorkspace\EsGrassBiomass')      # 添加函数文件位置
+sys.path.append(r'D:\Pycharm\PyCharmPythonFiles\EsGrassBiomass')      # 添加函数文件位置
 import EsRaster,readConfig
 
 '''时序均值计算'''
 keyName = [r'TNPP',r'BNPP',r'ANPP',r'fBNPP']
 filePath = r'G:\1_BeiJingUP\AUGB\Data\Analysis_NPP_2_Nan'
 stY = 2000
-edY = 2020
+edY = 2005
 yearList = [yr for yr in range(stY,edY+1)]
 dataStc = []
 ereStc = []

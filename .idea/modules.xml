@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/EsGrassBiomass.iml" filepath="$PROJECT_DIR$/.idea/EsGrassBiomass.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../.idea/PyCharmPythonFiles.iml" filepath="$PROJECT_DIR$/../.idea/PyCharmPythonFiles.iml" />
     </modules>
   </component>
 </project>

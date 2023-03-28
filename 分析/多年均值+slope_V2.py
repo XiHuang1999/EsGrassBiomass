@@ -14,7 +14,7 @@ from datetime import datetime
 import matplotlib.gridspec as gridspec
 from matplotlib.pyplot import MultipleLocator
 import matplotlib as mpl
-from adjustText import adjust_text
+# from adjustText import adjust_text
 from scipy import interpolate
 import matplotlib
 import matplotlib.pyplot as plt
@@ -30,7 +30,7 @@ import matplotlib.ticker as mticker
 
 # matplotlib.rcParams['backend'] = 'SVG'
 
-sys.path.append(r'E:\A_UCAS_Study\PythonWorkspace\EsGrassBiomass')      # 添加函数文件位置
+sys.path.append(r'D:\Pycharm\PyCharmPythonFiles\EsGrassBiomass')      # 添加函数文件位置
 import EsRaster,readConfig
 
 '''参数初始化设置'''
