@@ -67,8 +67,8 @@ import EsRaster,readConfig
 
 '''时序均值计算'''
 keyName = [r'ANPP',r'BNPP',r'TNPP',r'fBNPP']
-filePath = r'G:\1_BeiJingUP\AUGB\Data\EveryModel_NPP_3_Nan\BMA'
-climatePath = r'G:\1_BeiJingUP\AUGB\Data\20220629\Results'
+filePath = r'G:\1_BeiJingUP\AUGB\Data\EveryModel_NPP_3_Nan\BMA_CGrass'
+climatePath = r'G:\1_BeiJingUP\AUGB\Data\SEM_2000_2013\Slope_2000_2013_2' #r'G:\1_BeiJingUP\AUGB\Data\20220629\Results'
 cliName = [r'TAVG0',r'PRCP0']
 alpha = 0.95
 stY = 2000
@@ -394,7 +394,7 @@ plt.subplots_adjust(left=0.06, right=0.98, bottom=0.09, top=0.97, wspace=0.2, hs
 # plt.tight_layout()
 # endregion
 
-plt.savefig(r'G:\1_BeiJingUP\AUGB\Data\20220629\Results\PIC'+os.sep+'六个指标年际动态_'+(datetime.now().strftime("%H-%M-%S"))+'.svg'
-            ,dpi=1000,bbox_inches='tight',format='svg',transparency=True)#, transparent=True
+# plt.savefig(r'G:\1_BeiJingUP\AUGB\Data\20220629\Results\PIC'+os.sep+'六个指标年际动态_'+(datetime.now().strftime("%H-%M-%S"))+'.svg'
+#             ,dpi=1000,bbox_inches='tight',format='svg',transparency=True)#, transparent=True
 plt.show()
 print()

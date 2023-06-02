@@ -71,13 +71,13 @@ def RFEstimate(X,
                                                         Y,
                                                         test_size=1-train_size,
                                                         random_state=0)
-    # regressor = RandomForestRegressor()
-    RF_kwargs = {'n_estimators': 699, 'max_features': 7, 'bootstrap': True,'min_samples_split':4 ,'oob_score':True,'max_samples':0.985}
+    regressor = RandomForestRegressor({'bootstrap': True,'oob_score':True},random_state=99)
+    # RF_kwargs = {'n_estimators': 699, 'max_features': 7, 'bootstrap': True,'min_samples_split':4 ,'oob_score':True,'max_samples':0.985}
     # RF_kwargs = {'n_estimators': 566, 'max_features': 16, 'bootstrap': True}
     # RF_kwargs = {'n_estimators': 561, 'max_features': 5, 'bootstrap': True}
     # #{'n_estimators': 538, 'max_leaf_nodes': 10, 'max_features': 19, 'bootstrap': True}#
                 # {'n_estimators': 589, 'max_features': 7, 'bootstrap': True}
-    regressor = RandomForestRegressor(**RF_kwargs)
+    # regressor = RandomForestRegressor(**RF_kwargs,random_state=99)
 
     # # Parameters before
     # regressor.fit(X_train, y_train)
@@ -99,18 +99,19 @@ def RFEstimate(X,
     # regressor = RandomizedSearchCV(regressor, param_distributions=param_distribs,
     #                               n_iter=31500, cv=5, n_jobs=-1, scoring='neg_mean_squared_error')
 
-    # # # Parameters 2
-    # param_distribs = {
-    #     # 均匀离散随机变量
-    #     'n_estimators': [int(x) for x in np.linspace(start=300, stop=700, num=400)],
-    #     'max_features': [int(x) for x in np.linspace(start=1, stop=15, num=13)],  # 寻找最佳分割时要考虑的特征数量
-    #     #'max_leaf_nodes': [int(x) for x in np.linspace(start=2,stop=10,num=8)],
-    #     #'max_depth': [int(x) for x in np.linspace(start=1,stop=20,num=20)],           # 树的最大深度
-    #     #'min_samples_leaf': [int(x) for x in np.linspace(start=1,stop=12,num=10)],    # 在叶节点处需要的最小样本数
-    #     #'min_samples_split': [int(x) for x in np.linspace(start=2,stop=10,num=8)],   # 拆分内部节点所需的最少样本数
-    #     "bootstrap": [True, False]
-    # }
-    # regressor = GridSearchCV(regressor, param_grid=param_distribs, cv=5, n_jobs=-1, scoring='r2')
+    # # Parameters 2
+    # RF_kwargs = {'n_estimators': 699, 'max_features': 7, 'bootstrap': True,'min_samples_split':4 ,'oob_score':True,'max_samples':0.985}
+    param_distribs = {
+        # 均匀离散随机变量
+        'n_estimators': [int(x) for x in np.linspace(start=400, stop=800, num=200)],
+        'max_features': [int(x) for x in np.linspace(start=1, stop=30, num=15)]  # 寻找最佳分割时要考虑的特征数量
+        #'max_leaf_nodes': [int(x) for x in np.linspace(start=2,stop=10,num=8)],
+        # 'max_depth': [int(x) for x in np.linspace(start=1,stop=20,num=20)],           # 树的最大深度
+        #'min_samples_leaf': [int(x) for x in np.linspace(start=1,stop=12,num=10)],    # 在叶节点处需要的最小样本数
+        #'min_samples_split': [int(x) for x in np.linspace(start=2,stop=10,num=8)],   # 拆分内部节点所需的最少样本数
+        # "bootstrap": [True, False]
+    }
+    regressor = GridSearchCV(regressor, param_grid=param_distribs, cv=5, pre_dispatch=16, verbose=10, n_jobs=-1, scoring='r2')
 
     # Regression
     regressor.fit(X_train, y_train)
@@ -213,55 +214,55 @@ def RFEstimate(X,
     # xy = np.vstack([Y, outResults])
     # np.where((xy[0, :] > 586) & (xy[1, :] < 429))
 
-    # print(regressor.get_params().values())
-    # print(regressor.best_params_,end='\n\n')
-    # print(regressor.best_estimator_)
+    print(regressor.get_params().values())
+    print(regressor.best_params_,end='\n\n')
+    print(regressor.best_estimator_)
 
     # Out PIC
     # importances = regressor.feature_importances_
 
-    # read and predict
-    para_Output[0]=[r'G:\1_BeiJingUP\AUGB\Data\20220629\Parameters\LAT_China1km.tif',
-                    r'G:\1_BeiJingUP\AUGB\Data\20220629\Parameters\dem_china1km.tif',
-                     r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\Clay.tif',
-                     r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\CoarseSand.tif',
-                     r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\FineSand.tif',
-                     r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\OrganicMass.tif',
-                    r"G:\1_BeiJingUP\AUGB\Data\20220629\Soil\PH_H2O.tif",
-                     r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\PowderedSand.tif']
-    for yr in range(2000,2021):
-        print(yr)
-        '''Data Tif List'''
-        # staticPath
-        dymtif = [glob(dymPath+os.sep+r'*'+str(yr)+r'*.tif') for dymKey,dymPath in zip(list(para_Output[1].keys()),list(para_Output[1].values()))]    # dymPath+os.sep+dymKey.upper()[:-1]+r'_'+str(yr)+r'.tif'
-        dymtif = sum(dymtif, [])    # 解决List嵌套
-        yrTifList = para_Output[0]+dymtif
-        dataDf, im_proj, im_geotrans = EsRaster.read_tifList(yrTifList)
-
-        # Block split
-        # clay>-1        0<cgrass<100      NDVI>=0              prcp>-9999               fpar>0
-        xid = dataDf[(dataDf.iloc[:, 2] > -1) & (dataDf.iloc[:, 3] > -9999) & (dataDf.iloc[:, 8] >= 0) &
-                     (dataDf.iloc[:, 12] > -9999) & (dataDf.iloc[:, 18] >= 0)].index.tolist()
-        indf = dataDf.iloc[xid, :]
-        indf.columns = X_columns#[X_columns[0]] + X_columns[2:]
-        # indf = indf.reindex(columns=X_columns, fill_value=yr)
-        indf = np.array(indf)
-        indf = np.array_split(indf,200)
-        estimators = [regressor for i in range(200)]
-
-        '''Predict'''
-        kwgs = list(zip(estimators, indf))
-        outResults_ = run_imap_mp(EsRaster.generate_mulcpu_vars_Predict,kwgs,num_processes=30, is_tqdm=True)
-        outResults_ = np.hstack(tuple(outResults_))
-        outResults_ = outResults_.reshape([-1, 1])
-        outdat = np.zeros((4998 * 4088, 1)) - 9999
-        outdat[xid] = outResults_
-        outdat = outdat.reshape(4088,4998)
-
-        EsRaster.write_img(r"G:\1_BeiJingUP\AUGB\Data\20220629\Results\RF_AGB_5\全区域"+os.sep+r'RF_AGB_'+str(yr)+r'.tif', im_proj, im_geotrans, outdat)
-        del outResults_,dataDf,indf
-        tm.sleep(3)
-    print()
+    # # read and predict
+    # para_Output[0]=[r'G:\1_BeiJingUP\AUGB\Data\20220629\Parameters\LAT_China1km.tif',
+    #                 r'G:\1_BeiJingUP\AUGB\Data\20220629\Parameters\dem_china1km.tif',
+    #                  r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\Clay.tif',
+    #                  r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\CoarseSand.tif',
+    #                  r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\FineSand.tif',
+    #                  r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\OrganicMass.tif',
+    #                 r"G:\1_BeiJingUP\AUGB\Data\20220629\Soil\PH_H2O.tif",
+    #                  r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\PowderedSand.tif']
+    # for yr in range(2000,2021):
+    #     print(yr)
+    #     '''Data Tif List'''
+    #     # staticPath
+    #     dymtif = [glob(dymPath+os.sep+r'*'+str(yr)+r'*.tif') for dymKey,dymPath in zip(list(para_Output[1].keys()),list(para_Output[1].values()))]    # dymPath+os.sep+dymKey.upper()[:-1]+r'_'+str(yr)+r'.tif'
+    #     dymtif = sum(dymtif, [])    # 解决List嵌套
+    #     yrTifList = para_Output[0]+dymtif
+    #     dataDf, im_proj, im_geotrans = EsRaster.read_tifList(yrTifList)
+    #
+    #     # Block split
+    #     # clay>-1        0<cgrass<100      NDVI>=0              prcp>-9999               fpar>0
+    #     xid = dataDf[(dataDf.iloc[:, 2] > -1) & (dataDf.iloc[:, 3] > -9999) & (dataDf.iloc[:, 8] >= 0) &
+    #                  (dataDf.iloc[:, 12] > -9999) ].index.tolist()
+    #     indf = dataDf.iloc[xid, :]
+    #     indf.columns = X_columns#[X_columns[0]] + X_columns[2:]
+    #     # indf = indf.reindex(columns=X_columns, fill_value=yr)
+    #     indf = np.array(indf)
+    #     indf = np.array_split(indf,200)
+    #     estimators = [regressor for i in range(200)]
+    #
+    #     '''Predict'''
+    #     kwgs = list(zip(estimators, indf))
+    #     outResults_ = run_imap_mp(EsRaster.generate_mulcpu_vars_Predict,kwgs,num_processes=30, is_tqdm=True)
+    #     outResults_ = np.hstack(tuple(outResults_))
+    #     outResults_ = outResults_.reshape([-1, 1])
+    #     outdat = np.zeros((4998 * 4088, 1)) - 9999
+    #     outdat[xid] = outResults_
+    #     outdat = outdat.reshape(4088,4998)
+    #
+    #     EsRaster.write_img(r"G:\1_BeiJingUP\AUGB\Data\20220629\Results\RF_AGB_5不妨fPAR"+os.sep+r'RF_AGB_'+str(yr)+r'.tif', im_proj, im_geotrans, outdat)
+    #     del outResults_,dataDf,indf
+    #     tm.sleep(3)
+    # print()
 
     return
 

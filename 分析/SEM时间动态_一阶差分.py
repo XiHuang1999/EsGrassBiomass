@@ -45,7 +45,7 @@ exce=r"G:\1_BeiJingUP\AUGB\Data\SEM_2000_2018\ZonalResult2_一阶差分\ZonalCHN
 a=pd.read_excel(exce)
 dt = a.copy()
 hd = a.iloc[:,[0,2,4]]
-cl=['Livestock','FBNP','TAVG','PRCP','SWRS','NDVI','CO2']
+cl=['Livestock','fBNPP','TAVG','PRCP','SWRS','NDVI','CO2']
 s = pd.DataFrame()
 for j in range(0,endY-startY):
     s1 = pd.DataFrame()
@@ -54,8 +54,10 @@ for j in range(0,endY-startY):
         print(j)
         s2 = []
         for ci in cl:
+            print(ci + r'_' + str(i + 1) + r'  -  ' + ci + r'_' + str(j))
             sub = list(a.loc[:,ci+r'_'+str(i+1)] - a.loc[:,ci+r'_'+str(j)])
             s2.append(sub)
+        # s2.append(str(i + 1) + r' - ' + str(j))
         if i == 0:
             s2 = pd.DataFrame(s2).T
             s1 = pd.concat([hd,s2],axis=1)
@@ -90,6 +92,7 @@ s1 = pd.DataFrame()
 for i in range(0,endY-startY):
     s2 = []
     for ci in cl:
+        print(ci+r'_'+str(i+1)+r'  -  '+ci+r'_'+str(i))
         sub = list(a.loc[:,ci+r'_'+str(i+1)] - a.loc[:,ci+r'_'+str(i)])
         s2.append(sub)
     if i == 0:
@@ -114,17 +117,36 @@ s1.to_excel(r'G:\1_BeiJingUP\AUGB\Data\SEM_2000_2018\ZonalResult2_一阶差分\�
 
 
 
+##求slope
+startY = 2000
+endY = 2018
+path = r"G:\1_BeiJingUP\AUGB\Data\SEM_2000_2018\全区域最新"
+name = r'全区草地_Mean_汇总'
+exce = path + os.sep + name +r'.csv'
+a = pd.read_csv(exce,header=0,index_col=0)
+dt = a.copy()
+cl=list(a.index)
 
-
-
-
-
-
-
-
-
-
-
+s = pd.DataFrame()
+for j in range(0,endY-startY):
+    s1 = pd.DataFrame()
+    for i in range(j,endY-startY):
+        print(i+1,end='-')
+        print(j)
+        s2 = list(a.iloc[:,(i+1)] - a.iloc[:,(j)])
+        # s2.append(str(i + 1) + r' - ' + str(j))
+        if i == 0:
+            s2 = pd.DataFrame(s2).T
+            s1 = s2
+        else:
+            s2 = pd.DataFrame(s2).T
+            s1 = s1.append(s2) #pd.concat([s1,pd.DataFrame(s2).T],axis=0)
+    s = s.append(s1)  # pd.concat([s1,pd.DataFrame(s2).T],axis=0)
+print()
+# s[s.iloc[:,6]==0] = np.nan
+# s = s.dropna(subset=cl)
+s.columns = cl
+s.to_csv(path + os.sep + name + r'_一阶差分.csv')
 
 
 
