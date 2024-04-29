@@ -19,10 +19,9 @@ import time as tm
 import multiprocessing
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 from scipy.stats import gaussian_kde
 import scipy.stats as st
-
+import random
 from six import StringIO
 from IPython.display import Image
 from sklearn.tree import export_graphviz
@@ -72,15 +71,15 @@ def RFEstimate(X,
                                                         Y,
                                                         test_size=1-train_size,
                                                         random_state=0)
-    # regressor = RandomForestRegressor()
-    RF_kwargs = {'n_estimators': 699, 'max_features': 7, 'bootstrap': True,
-                 'min_samples_split':4 ,'oob_score':True,'max_samples':0.985}
-                 # 'criterion':'squared_error'}
-    # RF_kwargs = {'n_estimators': 566, 'max_features': 16, 'bootstrap': True}
-    # RF_kwargs = {'n_estimators': 561, 'max_features': 5, 'bootstrap': True}
-    # #{'n_estimators': 538, 'max_leaf_nodes': 10, 'max_features': 19, 'bootstrap': True}#
-                # {'n_estimators': 589, 'max_features': 7, 'bootstrap': True}
-    regressor = RandomForestRegressor(**RF_kwargs)
+    regressor = RandomForestRegressor()
+    # RF_kwargs = {'n_estimators': 699, 'max_features': 7, 'bootstrap': True,
+    #              'min_samples_split':4 ,'oob_score':True,'max_samples':0.985}
+    #              # 'criterion':'squared_error'}
+    # # RF_kwargs = {'n_estimators': 566, 'max_features': 16, 'bootstrap': True}
+    # # RF_kwargs = {'n_estimators': 561, 'max_features': 5, 'bootstrap': True}
+    # # #{'n_estimators': 538, 'max_leaf_nodes': 10, 'max_features': 19, 'bootstrap': True}#
+    #             # {'n_estimators': 589, 'max_features': 7, 'bootstrap': True}
+    # regressor = RandomForestRegressor(**RF_kwargs)
 
     # # Parameters before
     # regressor.fit(X_train, y_train)
@@ -102,22 +101,107 @@ def RFEstimate(X,
     # regressor = RandomizedSearchCV(regressor, param_distributions=param_distribs,
     #                               n_iter=31500, cv=5, n_jobs=-1, scoring='neg_mean_squared_error')
 
-    # # # Parameters 2
-    # param_distribs = {
-    #     # 均匀离散随机变量
-    #     'n_estimators': [int(x) for x in np.linspace(start=300, stop=700, num=400)],
-    #     'max_features': [int(x) for x in np.linspace(start=1, stop=15, num=13)],  # 寻找最佳分割时要考虑的特征数量
-    #     #'max_leaf_nodes': [int(x) for x in np.linspace(start=2,stop=10,num=8)],
-    #     #'max_depth': [int(x) for x in np.linspace(start=1,stop=20,num=20)],           # 树的最大深度
-    #     #'min_samples_leaf': [int(x) for x in np.linspace(start=1,stop=12,num=10)],    # 在叶节点处需要的最小样本数
-    #     #'min_samples_split': [int(x) for x in np.linspace(start=2,stop=10,num=8)],   # 拆分内部节点所需的最少样本数
-    #     "bootstrap": [True, False]
-    # }
-    # regressor = GridSearchCV(regressor, param_grid=param_distribs, cv=5, n_jobs=-1, scoring='r2')
+    # # Parameters 2
+    param_distribs = {
+        # 均匀离散随机变量
+        'n_estimators': [int(x) for x in np.linspace(start=700, stop=800, num=100)],
+        'max_features': [int(x) for x in np.linspace(start=1, stop=60, num=30)]  # 寻找最佳分割时要考虑的特征数量
+        #'max_leaf_nodes': [int(x) for x in np.linspace(start=2,stop=10,num=8)],
+        #'max_depth': [int(x) for x in np.linspace(start=1,stop=20,num=20)],           # 树的最大深度
+        #'min_samples_leaf': [int(x) for x in np.linspace(start=1,stop=12,num=10)],    # 在叶节点处需要的最小样本数
+        #'min_samples_split': [int(x) for x in np.linspace(start=2,stop=10,num=8)],   # 拆分内部节点所需的最少样本数
+        # "bootstrap": [True, False]
+    }
+
+    # dict_values(
+    #     [5, nan, True, 0.0, 'squared_error', None, 1.0, None, None, 0.0, 1, 2, 0.0, 100, None, False, None, 0, False,
+    #      RandomForestRegressor(), 10, {
+    #          'n_estimators': [300, 302, 304, 306, 308, 310, 312, 314, 316, 318, 320, 322, 324, 326, 328, 330, 332, 334,
+    #                           336, 338, 340, 342, 344, 346, 348, 350, 352, 354, 356, 358, 360, 362, 364, 366, 368, 370,
+    #                           372, 374, 376, 378, 380, 382, 384, 386, 388, 390, 392, 394, 396, 398, 400, 402, 404, 406,
+    #                           408, 410, 412, 414, 416, 418, 420, 422, 424, 426, 428, 430, 432, 434, 436, 438, 440, 442,
+    #                           444, 446, 448, 450, 452, 454, 456, 458, 460, 462, 464, 466, 468, 470, 472, 474, 476, 478,
+    #                           480, 482, 484, 486, 488, 490, 492, 494, 496, 498, 501, 503, 505, 507, 509, 511, 513, 515,
+    #                           517, 519, 521, 523, 525, 527, 529, 531, 533, 535, 537, 539, 541, 543, 545, 547, 549, 551,
+    #                           553, 555, 557, 559, 561, 563, 565, 567, 569, 571, 573, 575, 577, 579, 581, 583, 585, 587,
+    #                           589, 591, 593, 595, 597, 599, 601, 603, 605, 607, 609, 611, 613, 615, 617, 619, 621, 623,
+    #                           625, 627, 629, 631, 633, 635, 637, 639, 641, 643, 645, 647, 649, 651, 653, 655, 657, 659,
+    #                           661, 663, 665, 667, 669, 671, 673, 675, 677, 679, 681, 683, 685, 687, 689, 691, 693, 695,
+    #                           697, 700], 'max_features': [1, 3, 5, 7, 9, 11, 13, 15, 17, 20]}, 16, True, False, 'r2',
+    #      300])
+    # {'max_features': 1, 'n_estimators': 308}
+    #
+    # RandomForestRegressor(max_features=1, n_estimators=308)
+    # Training
+    # score: 0.9449 / Testing
+    # score: 0.4087 / Allsite
+    # score: 0.9007 / Time
+    # Using: 270.36 min
+
+    # dict_values(
+    #     [5, nan, True, 0.0, 'squared_error', None, 1.0, None, None, 0.0, 1, 2, 0.0, 100, None, False, None, 0, False,
+    #      RandomForestRegressor(), 10, {
+    #          'n_estimators': [301, 303, 305, 307, 309, 311, 313, 315, 317, 319, 321, 323, 325, 327, 329, 331, 333, 335,
+    #                           337, 339, 341, 343, 345, 347, 349, 351, 353, 355, 357, 359, 361, 363, 365, 367, 369, 371,
+    #                           373, 375, 377, 379, 381, 383, 385, 387, 389, 391, 393, 395, 397, 399, 401, 403, 405, 407,
+    #                           409, 411, 413, 415, 417, 419, 421, 423, 425, 427, 429, 431, 433, 435, 437, 439, 441, 443,
+    #                           445, 447, 449, 451, 453, 455, 457, 459, 461, 463, 465, 467, 469, 471, 473, 475, 477, 479,
+    #                           481, 483, 485, 487, 489, 491, 493, 495, 497, 499, 502, 504, 506, 508, 510, 512, 514, 516,
+    #                           518, 520, 522, 524, 526, 528, 530, 532, 534, 536, 538, 540, 542, 544, 546, 548, 550, 552,
+    #                           554, 556, 558, 560, 562, 564, 566, 568, 570, 572, 574, 576, 578, 580, 582, 584, 586, 588,
+    #                           590, 592, 594, 596, 598, 600, 602, 604, 606, 608, 610, 612, 614, 616, 618, 620, 622, 624,
+    #                           626, 628, 630, 632, 634, 636, 638, 640, 642, 644, 646, 648, 650, 652, 654, 656, 658, 660,
+    #                           662, 664, 666, 668, 670, 672, 674, 676, 678, 680, 682, 684, 686, 688, 690, 692, 694, 696,
+    #                           698, 701], 'max_features': [1, 3, 5, 7, 9, 11, 13, 15, 17, 20]}, 16, True, False, 'r2',
+    #      300])
+    # {'max_features': 1, 'n_estimators': 576}
+    #
+    # RandomForestRegressor(max_features=1, n_estimators=576)
+    # Training
+    # score: 0.9465 / Testing
+    # score: 0.3951 / Allsite
+    # score: 0.9001 / Time
+    # Using: 265.99
+    # min /
+
+    # dict_values(
+    #     [5, nan, True, 0.0, 'squared_error', None, 1.0, None, None, 0.0, 1, 2, 0.0, 100, None, False, None, 0, False,
+    #      RandomForestRegressor(), 10, {
+    #          'n_estimators': [700, 701, 702, 703, 704, 705, 706, 707, 708, 709, 710, 711, 712, 713, 714, 715, 716, 717,
+    #                           718, 719, 720, 721, 722, 723, 724, 725, 726, 727, 728, 729, 730, 731, 732, 733, 734, 735,
+    #                           736, 737, 738, 739, 740, 741, 742, 743, 744, 745, 746, 747, 748, 749, 750, 751, 752, 753,
+    #                           754, 755, 756, 757, 758, 759, 760, 761, 762, 763, 764, 765, 766, 767, 768, 769, 770, 771,
+    #                           772, 773, 774, 775, 776, 777, 778, 779, 780, 781, 782, 783, 784, 785, 786, 787, 788, 789,
+    #                           790, 791, 792, 793, 794, 795, 796, 797, 798, 799, 800, 801, 802, 803, 804, 805, 806, 807,
+    #                           808, 809, 810, 811, 812, 813, 814, 815, 816, 817, 818, 819, 820, 821, 822, 823, 824, 825,
+    #                           826, 827, 828, 829, 830, 831, 832, 833, 834, 835, 836, 837, 838, 839, 840, 841, 842, 843,
+    #                           844, 845, 846, 847, 848, 849, 850, 851, 852, 853, 854, 855, 856, 857, 858, 859, 860, 861,
+    #                           862, 863, 864, 865, 866, 867, 868, 869, 870, 871, 872, 873, 874, 875, 876, 877, 878, 879,
+    #                           880, 881, 882, 883, 884, 885, 886, 887, 888, 889, 890, 891, 892, 893, 894, 895, 896, 897,
+    #                           898, 900]}, 16, True, False, 'r2', 300])
+    # {'n_estimators': 757}
+    #
+    # RandomForestRegressor(n_estimators=757)
+    # Training
+    # score: 0.9392 / Testing
+    # score: 0.4059 / Allsite
+    # score: 0.8921 / Time
+    # Using: 70.59
+    # min /
+
+
+    regressor = GridSearchCV(regressor, param_grid=param_distribs, cv=5, n_jobs=10,
+                             pre_dispatch=20, verbose=1, scoring='r2') #
 
     # Regression
+    random.seed(0)
     regressor.fit(X_train, y_train)
-    importances = pd.DataFrame(regressor.feature_importances_,index=X_columns)
+
+    print(regressor.get_params().values())
+    print(regressor.best_params_,end='\n\n')
+    print(regressor.best_estimator_)
+
+    # importances = pd.DataFrame(regressor.feature_importances_,index=X_columns)
 
     # outResults1 = regressor.predict(X_train)
     # score = explained_variance_score(y_train, outResults1)
@@ -146,29 +230,25 @@ def RFEstimate(X,
 
 
     # region Drawing
-    mpl.rcParams['pdf.fonttype'] = 42
-    mpl.rcParams['ps.fonttype'] = 42
-    xy = np.vstack([Y, outResults])
-    z = gaussian_kde(xy)(xy)
-    idx = z.argsort()
-    linreg = st.linregress(pd.Series(Y, dtype=np.float64), pd.Series(outResults, dtype=np.float64))
-    pltx = [int(x) for x in np.linspace(start=0, stop=max(Y), num=1000)]
-    plty = [linreg.slope * x + linreg.intercept for x in pltx]
-    f, ax = plt.subplots(figsize=(14/3/2.54+2, 14/3/2.54+2))
-    plt.plot(pltx, plty, '-', color='red', alpha=0.8, linewidth=2, label='Fitting Line')    # color='#4169E1'
-    plt.plot(pltx, pltx, '-', color='black', alpha=0.8, linewidth=2, label='1:1')
-    plt.scatter(Y, outResults,c=z,s=1.3,cmap='Spectral')
-    plt.text(300,900,r'y = '+str('%.2f' % linreg.slope)+r'*x + '+str('%.2f' % linreg.intercept)+
-             '\n'+r'R Square = '+str('%.2f' % (linreg.rvalue**2))+
-             '\n'+r'P Value = '+str('%.2f' % linreg.pvalue)
-             ,fontsize=12,color = "black",fontweight='bold')
-    plt.subplots_adjust(left=.1, right=0.95, bottom=0.22, top=0.95)
-    plt.xlabel('Literature and field based ANPP value')  # 添加x轴和y轴标签
-    plt.ylabel('Machine-learning based ANPP value')
-    # plt.savefig(r'G:\1_BeiJingUP\AUGB\Data\20220629\Results'+os.sep+r'PIC'+os.sep+'RF_results.png',dpi=500,bbox_inches='tight')#, transparent=True
-    plt.savefig(r'G:\1_BeiJingUP\AUGB\Data\20220629\Results' + os.sep + r'PIC' + os.sep + 'RF_results_test.pdf',
-                dpi=600, bbox_inches='tight',format="pdf")  # , transparent=True
-    plt.show()
+    # xy = np.vstack([Y, outResults])
+    # z = gaussian_kde(xy)(xy)
+    # idx = z.argsort()
+    # linreg = st.linregress(pd.Series(Y, dtype=np.float64), pd.Series(outResults, dtype=np.float64))
+    # pltx = [int(x) for x in np.linspace(start=0, stop=max(Y), num=1000)]
+    # plty = [linreg.slope * x + linreg.intercept for x in pltx]
+    # f, ax = plt.subplots(figsize=(6, 6))
+    # plt.plot(pltx, plty, '-', color='red', alpha=0.8, linewidth=2, label='Fitting Line')    # color='#4169E1'
+    # plt.plot(pltx, pltx, '-', color='black', alpha=0.8, linewidth=2, label='1:1')
+    # plt.scatter(Y, outResults,c=z,s=1.3,cmap='Spectral')
+    # plt.text(400,1500,r'y = '+str('%.2f' % linreg.slope)+r'*x + '+str('%.2f' % linreg.intercept)+
+    #          '\n'+r'R Square = '+str('%.2f' % (linreg.rvalue**2))+
+    #          '\n'+r'P Value = '+str('%.2f' % linreg.pvalue)
+    #          ,fontsize=8,color = "r",fontweight='bold')
+    # plt.subplots_adjust(left=.1, right=0.95, bottom=0.22, top=0.95)
+    # plt.xlabel('AGB Site Value')  # 添加x轴和y轴标签
+    # plt.ylabel('Model Value')
+    # # plt.savefig(r'G:\1_BeiJingUP\AUGB\Data\20220629\Results'+os.sep+r'PIC'+os.sep+'RF_results.png',dpi=500,bbox_inches='tight')#, transparent=True
+    # plt.show()
 
     # xy = np.vstack([y_train, outResults1])
     # z = gaussian_kde(xy)(xy)
@@ -221,55 +301,54 @@ def RFEstimate(X,
     # xy = np.vstack([Y, outResults])
     # np.where((xy[0, :] > 586) & (xy[1, :] < 429))
 
-    # print(regressor.get_params().values())
-    # print(regressor.best_params_,end='\n\n')
-    # print(regressor.best_estimator_)
 
     # Out PIC
     # importances = regressor.feature_importances_
 
-    # read and predict
-    para_Output[0]=[r'G:\1_BeiJingUP\AUGB\Data\20220629\Parameters\LAT_China1km.tif',
-                    r'G:\1_BeiJingUP\AUGB\Data\20220629\Parameters\dem_china1km.tif',
-                     r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\Clay.tif',
-                     r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\CoarseSand.tif',
-                     r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\FineSand.tif',
-                     r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\OrganicMass.tif',
-                    r"G:\1_BeiJingUP\AUGB\Data\20220629\Soil\PH_H2O.tif",
-                     r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\PowderedSand.tif']
-    for yr in range(2000,2021):
-        print(yr)
-        '''Data Tif List'''
-        # staticPath
-        dymtif = [glob(dymPath+os.sep+r'*'+str(yr)+r'*.tif') for dymKey,dymPath in zip(list(para_Output[1].keys()),list(para_Output[1].values()))]    # dymPath+os.sep+dymKey.upper()[:-1]+r'_'+str(yr)+r'.tif'
-        dymtif = sum(dymtif, [])    # 解决List嵌套
-        yrTifList = para_Output[0]+dymtif
-        dataDf, im_proj, im_geotrans = EsRaster.read_tifList(yrTifList)
-
-        # Block split
-        # clay>-1        0<cgrass<100      NDVI>=0              prcp>-9999               fpar>0
-        xid = dataDf[(dataDf.iloc[:, 2] > -1) & (dataDf.iloc[:, 3] > -9999) & (dataDf.iloc[:, 8] >= 0) &
-                     (dataDf.iloc[:, 12] > -9999) & (dataDf.iloc[:, 18] >= 0)].index.tolist()
-        indf = dataDf.iloc[xid, :]
-        indf.columns = X_columns#[X_columns[0]] + X_columns[2:]
-        # indf = indf.reindex(columns=X_columns, fill_value=yr)
-        indf = np.array(indf)
-        indf = np.array_split(indf,200)
-        estimators = [regressor for i in range(200)]
-
-        '''Predict'''
-        kwgs = list(zip(estimators, indf))
-        outResults_ = run_imap_mp(EsRaster.generate_mulcpu_vars_Predict,kwgs,num_processes=30, is_tqdm=True)
-        outResults_ = np.hstack(tuple(outResults_))
-        outResults_ = outResults_.reshape([-1, 1])
-        outdat = np.zeros((4998 * 4088, 1)) - 9999
-        outdat[xid] = outResults_
-        outdat = outdat.reshape(4088,4998)
-
-        EsRaster.write_img(r"G:\1_BeiJingUP\AUGB\Data\20220629\Results\RF_AGB_5\全区域"+os.sep+r'RF_AGB_'+str(yr)+r'.tif', im_proj, im_geotrans, outdat)
-        del outResults_,dataDf,indf
-        tm.sleep(3)
-    print()
+    # # read and predict
+    # para_Output[0]=[r'G:\1_BeiJingUP\AUGB\Data\20220629\Parameters\LAT_China1km.tif',
+    #                 r'G:\1_BeiJingUP\AUGB\Data\20220629\Parameters\dem_china1km.tif']
+    #                 #  r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\Clay.tif',
+    #                 #  r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\CoarseSand.tif',
+    #                 #  r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\FineSand.tif',
+    #                 #  r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\OrganicMass.tif',
+    #                 # r"G:\1_BeiJingUP\AUGB\Data\20220629\Soil\PH_H2O.tif",
+    #                 #  r'G:\1_BeiJingUP\AUGB\Data\20220629\Soil\PowderedSand.tif']
+    # for yr in range(2000,2001):
+    #     print(yr)
+    #     '''Data Tif List'''
+    #     # staticPath
+    #     dymtif = [glob(dymPath+os.sep+r'*'+str(yr)+r'*.tif') for dymKey,dymPath in zip(list(para_Output[1].keys()),list(para_Output[1].values()))]    # dymPath+os.sep+dymKey.upper()[:-1]+r'_'+str(yr)+r'.tif'
+    #     dymtif = sum(dymtif, [])    # 解决List嵌套
+    #     yrTifList = para_Output[0]+dymtif
+    #     dataDf, im_proj, im_geotrans = EsRaster.read_tifList(yrTifList)
+    #
+    #     # Block split
+    #     # clay>-1        0<cgrass<100      NDVI>=0              prcp>-9999               fpar>0
+    #     xid = dataDf[(dataDf.iloc[:, 2] >= 0) &
+    #                  (dataDf.iloc[:, 6] > -9999) & (dataDf.iloc[:, 13] >= 0)].index.tolist()
+    #     # dataDf.insert(loc=1, column='Year', value=[yr for yri in range(dataDf.shape[0])])
+    #
+    #     indf = dataDf.iloc[xid, :]
+    #     indf.columns = X_columns#[X_columns[0]] + X_columns[2:]
+    #     # indf = indf.reindex(columns=X_columns, fill_value=yr)
+    #     indf = np.array(indf)
+    #     indf = np.array_split(indf,200)
+    #     estimators = [regressor for i in range(200)]
+    #
+    #     '''Predict'''
+    #     kwgs = list(zip(estimators, indf))
+    #     outResults_ = run_imap_mp(EsRaster.generate_mulcpu_vars_Predict,kwgs,num_processes=30, is_tqdm=True)
+    #     outResults_ = np.hstack(tuple(outResults_))
+    #     outResults_ = outResults_.reshape([-1, 1])
+    #     outdat = np.zeros((4998 * 4088, 1)) - 9999
+    #     outdat[xid] = outResults_
+    #     outdat = outdat.reshape(4088,4998)
+    #
+    #     EsRaster.write_img(r"G:\1_BeiJingUP\AUGB\Data\20220629\Results\RF_AGB_6不放Soil"+os.sep+r'RF_AGB_'+str(yr)+r'.tif', im_proj, im_geotrans, outdat)
+    #     del outResults_,dataDf,indf
+    #     tm.sleep(1)
+    # print()
 
     return
 

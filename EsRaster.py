@@ -323,8 +323,8 @@ def SampleRaster_gdal3(tifList, ptShp, siteName, nirCellNum=1, Scope='',
             for i in range(len(station_list)):
                 # LonLat to ColRow
                 [x, y] = CoordSys.lonlat2imagexy(dr, yValues[i], xValues[i]) # Gdal3后版本 维在前经在后
-                # if math.isnan(x):
-                #     print('sdf')
+                if math.isnan(x):
+                    print('sdf')
                 # 判断方框滤波
                 if nirCellNum == 1:
                     dt = dr.ReadAsArray(int(x), int(y), 1, 1)
@@ -343,6 +343,9 @@ def SampleRaster_gdal3(tifList, ptShp, siteName, nirCellNum=1, Scope='',
                     values[i][tif_i] = valueList.mean()
                 elif Scope == '>0':
                     valueList = valueList[valueList > 0]
+                    values[i][tif_i] = valueList.mean()
+                elif Scope == '>-9999':
+                    valueList = valueList[valueList > -9999]
                     values[i][tif_i] = valueList.mean()
                 elif Scope == 'NotNone':
                     #valueList = valueList[valueList > 0]

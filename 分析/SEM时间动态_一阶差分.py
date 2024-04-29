@@ -120,10 +120,12 @@ s1.to_excel(r'G:\1_BeiJingUP\AUGB\Data\SEM_2000_2018\ZonalResult2_一阶差分\�
 ##求slope
 startY = 2000
 endY = 2018
-path = r"G:\1_BeiJingUP\AUGB\Data\SEM_2000_2018\全区域最新"
-name = r'全区草地_Mean_汇总'
-exce = path + os.sep + name +r'.csv'
-a = pd.read_csv(exce,header=0,index_col=0)
+# path = r"G:\1_BeiJingUP\AUGB\Data\SEM_2000_2018_Temporal_17CGrass\ZonalTable_AllFactors"
+# name = r'CHN'
+path = r"G:\1_BeiJingUP\AUGB\Data\SEM_2000_2018_Temporal_17CGrass\ZonalTable_AllFactors_SignifcantRegion"
+name = r'CHN_sig'
+exce = path + os.sep + name +r'.xlsx'
+a = pd.read_excel(exce,header=0,index_col=0)
 dt = a.copy()
 cl=list(a.index)
 
@@ -146,7 +148,8 @@ print()
 # s[s.iloc[:,6]==0] = np.nan
 # s = s.dropna(subset=cl)
 s.columns = cl
-s.to_csv(path + os.sep + name + r'_一阶差分.csv')
+s.to_csv(path + os.sep + name + r'_一阶差分.csv',index=False)
+s.to_excel(path + os.sep + name + r'_一阶差分.xlsx')
 
 
 

@@ -23,7 +23,7 @@ import configparser
 #os.path.realpath：获取当前执行脚本的绝对路径。
 #os.path.split：如果给出的是一个目录和文件名，则输出路径和文件名
 proDir = os.path.split(os.path.realpath(__file__))[0]
-configPath = os.path.join(proDir, "Parameters.ini")
+configPath = os.path.join(proDir, "Parameters20240410.ini")
 
 
 class ReadConfig:
@@ -43,14 +43,14 @@ class ReadConfig:
         value = self.cf.get("dynamic", param)
         return value
 
-def get_stcAnddym():
+def get_stcAnddym(inif=''):
     '''
     函数读取参数文件
     '''
     # Creat configparaser objection
     configP = configparser.ConfigParser()
     # Read config file
-    configP.read(configPath)
+    configP.read(inif)
     # Get all sections
     sections = configP.sections()
     print(sections, end='\n')

@@ -22,9 +22,10 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from scipy.stats import gaussian_kde
 import scipy.stats as st
+import random
 
 from six import StringIO
-from IPython.display import Image
+# from IPython.display import Image
 from sklearn.tree import export_graphviz
 # import pydotplus
 import os, sys
@@ -59,7 +60,7 @@ def RFEstimate(X,
     '''
 
     import os
-    os.environ['PROJ_LIB'] = r"E:\Anaconda\Anaconda\Lib\site-packages\osgeo\data\proj"
+    os.environ['PROJ_LIB'] = r'I:\代码\PyCharmPythonFiles\PythonFiles_IGSNRR5\Lib\site-packages\osgeo\data\proj' #r"E:\Anaconda\Anaconda\Lib\site-packages\osgeo\data\proj"
     print(r"Start RF Predict AGB:")
     t1 = time()
 
@@ -68,18 +69,30 @@ def RFEstimate(X,
     Y = np.array(Y)
 
     # 将数据分为训练样本和验证样本
+    # random.seed(999)
     X_train, X_test, y_train, y_test = train_test_split(X,
                                                         Y,
                                                         test_size=1-train_size,
+                                                        shuffle=True,
                                                         random_state=0)
-    # regressor = RandomForestRegressor()
-    RF_kwargs = {'n_estimators': 699, 'max_features': 7, 'bootstrap': True,
-                 'min_samples_split':4 ,'oob_score':True,'max_samples':0.985}
-                 # 'criterion':'squared_error'}
-    # RF_kwargs = {'n_estimators': 566, 'max_features': 16, 'bootstrap': True}
-    # RF_kwargs = {'n_estimators': 561, 'max_features': 5, 'bootstrap': True}
-    # #{'n_estimators': 538, 'max_leaf_nodes': 10, 'max_features': 19, 'bootstrap': True}#
-                # {'n_estimators': 589, 'max_features': 7, 'bootstrap': True}
+
+    # RF_kwargs = {'n_estimators': 699, 'max_features': 7, 'bootstrap': True, 'min_samples_leaf':7,
+    #              'min_samples_split':7 ,'oob_score':True, 'max_samples':0.8, "random_state":0}
+    #              # 'criterion':'squared_error'}
+    # # RF_kwargs = {'n_estimators': 603, 'max_features': 7, 'bootstrap': True,
+    # #              'min_samples_split':4 ,'oob_score':True,'max_samples':0.985}
+    #              #'criterion':'squared_error'}
+    # RF_kwargs = {'n_estimators': 699, 'max_features': 7, 'bootstrap': True,
+    #              'min_samples_split':4 ,'oob_score':True,'max_samples':0.985}
+
+    RF_kwargs = {'n_estimators': 593, 'max_features': 4, 'bootstrap': True, 'max_depth': 24,
+                 'min_samples_leaf':1 ,'min_samples_split':2,'max_samples':0.82, 'random_state':0}
+    # RF_kwargs = {'n_estimators': 566, 'max_features': 3, 'bootstrap': True,
+    #              'max_depth':3, 'min_samples_split':0.1 , 'min_samples_leaf':5,
+    #              'oob_score':True,'max_samples':0.985}
+    # # RF_kwargs = {'n_estimators': 561, 'max_features': 5, 'bootstrap': True}
+    # # # #{'n_estimators': 538, 'max_leaf_nodes': 10, 'max_features': 19, 'bootstrap': True}#
+    # #             # {'n_estimators': 589, 'max_features': 7, 'bootstrap': True}
     regressor = RandomForestRegressor(**RF_kwargs)
 
     # # Parameters before
@@ -102,22 +115,49 @@ def RFEstimate(X,
     # regressor = RandomizedSearchCV(regressor, param_distributions=param_distribs,
     #                               n_iter=31500, cv=5, n_jobs=-1, scoring='neg_mean_squared_error')
 
-    # # # Parameters 2
+    # RF_kwargs = {'n_estimators': 699, 'max_features': 7, 'bootstrap': True,
+    #              'min_samples_split':4 ,'oob_score':True,'max_samples':0.985}
+    # # Parameters 2
     # param_distribs = {
     #     # 均匀离散随机变量
-    #     'n_estimators': [int(x) for x in np.linspace(start=300, stop=700, num=400)],
-    #     'max_features': [int(x) for x in np.linspace(start=1, stop=15, num=13)],  # 寻找最佳分割时要考虑的特征数量
+    #     'n_estimators': [int(x) for x in np.linspace(start=600, stop=800, num=200)],
+    #     'max_features': [int(x) for x in np.linspace(start=1, stop=30, num=15)],  # 寻找最佳分割时要考虑的特征数量
     #     #'max_leaf_nodes': [int(x) for x in np.linspace(start=2,stop=10,num=8)],
     #     #'max_depth': [int(x) for x in np.linspace(start=1,stop=20,num=20)],           # 树的最大深度
     #     #'min_samples_leaf': [int(x) for x in np.linspace(start=1,stop=12,num=10)],    # 在叶节点处需要的最小样本数
     #     #'min_samples_split': [int(x) for x in np.linspace(start=2,stop=10,num=8)],   # 拆分内部节点所需的最少样本数
-    #     "bootstrap": [True, False]
+    #     "bootstrap": [True]
     # }
-    # regressor = GridSearchCV(regressor, param_grid=param_distribs, cv=5, n_jobs=-1, scoring='r2')
+    # # regressor = GridSearchCV(regressor, param_grid=param_distribs, cv=5, n_jobs=-1, scoring='r2')
+    # regressor = GridSearchCV(regressor, param_grid=param_distribs, n_jobs=10, pre_dispatch=20, cv=5, verbose=10,
+    #                          scoring=r'r2')
+
+    # # RF_kwargs = {'n_estimators': 593, 'max_features': 4, 'bootstrap': True, 'max_depth': 24,
+    # #              'min_samples_leaf':1 ,'min_samples_split':2,'max_samples':0.82}
+    # # Parameters 3
+    # regressor = RandomForestRegressor(random_state=0)
+    # param_distribs = {
+    #     # 均匀离散随机变量
+    #     'n_estimators': [593],
+    #     # 'n_estimators': [308],
+    #     'max_features': [4],  # 寻找最佳分割时要考虑的特征数量
+    #     #'max_leaf_nodes': [int(x) for x in np.linspace(start=2,stop=10,num=8)],
+    #     'max_depth': [24],           # 树的最大深度
+    #     'min_samples_leaf': [1],    # 在叶节点处需要的最小样本数
+    #     'min_samples_split': [2],   # 拆分内部节点所需的最少样本数
+    #     'max_samples': [0.82],
+    #     "bootstrap": [True]
+    # }
+    # regressor = GridSearchCV(regressor, param_grid=param_distribs, n_jobs=10, pre_dispatch=20, cv=5, verbose=10,
+    #                          scoring=r'r2')
 
     # Regression
     regressor.fit(X_train, y_train)
-    importances = pd.DataFrame(regressor.feature_importances_,index=X_columns)
+
+    # print(regressor.best_params_)
+    # print(regressor.best_estimator_)
+    # print(regressor.best_score_)
+    # importances = pd.DataFrame(regressor.feature_importances_,index=X_columns)
 
     # outResults1 = regressor.predict(X_train)
     # score = explained_variance_score(y_train, outResults1)
@@ -166,7 +206,7 @@ def RFEstimate(X,
     plt.xlabel('Literature and field based ANPP value')  # 添加x轴和y轴标签
     plt.ylabel('Machine-learning based ANPP value')
     # plt.savefig(r'G:\1_BeiJingUP\AUGB\Data\20220629\Results'+os.sep+r'PIC'+os.sep+'RF_results.png',dpi=500,bbox_inches='tight')#, transparent=True
-    plt.savefig(r'G:\1_BeiJingUP\AUGB\Data\20220629\Results' + os.sep + r'PIC' + os.sep + 'RF_results_test.pdf',
+    plt.savefig(r'G:\1_BeiJingUP\AUGB\Data\20220629\Results' + os.sep + r'PIC' + os.sep + 'RF_results_test2024-1.pdf',
                 dpi=600, bbox_inches='tight',format="pdf")  # , transparent=True
     plt.show()
 
@@ -217,16 +257,48 @@ def RFEstimate(X,
 
     # did = np.where((xy[0,:]>192.7)&(xy[1,:]<145.3))
     # did = np.where((xy[0,:]>265)&(xy[1,:]<185))
-    # did = np.where((xy[0,:]<32)&(xy[1,:]>170))
+    did = np.where((xy[0,:]>638)&(xy[1,:]<397))
     # xy = np.vstack([Y, outResults])
     # np.where((xy[0, :] > 586) & (xy[1, :] < 429))
 
-    # print(regressor.get_params().values())
+    # print("  ",end='\n\n')
+    # print(regressor.get_params(),end='\n\n')
+    # print(regressor.get_params().values(),end='\n\n')
     # print(regressor.best_params_,end='\n\n')
     # print(regressor.best_estimator_)
 
     # Out PIC
     # importances = regressor.feature_importances_
+
+    # # 获取特征重要性得分
+    # feature_importances = regressor.feature_importances_
+    # # 创建特征名列表
+    # feature_names = X_columns
+    # # 创建一个DataFrame，包含特征名和其重要性得分
+    # feature_importances_df = pd.DataFrame({'feature': feature_names, 'importance': feature_importances})
+    # # 对特征重要性得分进行排序
+    # feature_importances_df = feature_importances_df.sort_values('importance', ascending=False)
+    # # 颜色映射
+    # colors = plt.cm.viridis(np.linspace(0, 1, len(feature_names)))
+    # # 可视化特征重要性
+    # fig, ax = plt.subplots(figsize=(10, 6))
+    # ax.barh(feature_importances_df['feature'], feature_importances_df['importance'], color=colors)
+    # ax.invert_yaxis()  # 翻转y轴，使得最大的特征在最上面
+    # ax.set_xlabel('特征重要性', fontsize=12)  # 图形的x标签
+    # ax.set_title('随机森林特征重要性可视化', fontsize=16)
+    # for i, v in enumerate(feature_importances_df['importance']):
+    #     ax.text(v + 0.01, i, str(round(v, 3)), va='center', fontname='Times New Roman', fontsize=10)
+    # # # 设置图形样式
+    # # plt.style.use('default')
+    # ax.spines['top'].set_visible(False)  # 去掉上边框
+    # ax.spines['right'].set_visible(False)  # 去掉右边框
+    # # ax.spines['left'].set_linewidth(0.5)#左边框粗细
+    # # ax.spines['bottom'].set_linewidth(0.5)#下边框粗细
+    # # ax.tick_params(width=0.5)
+    # # ax.set_facecolor('white')#背景色为白色
+    # # ax.grid(False)#关闭内部网格线
+    # # 保存图形
+    # plt.show()
 
     # read and predict
     para_Output[0]=[r'G:\1_BeiJingUP\AUGB\Data\20220629\Parameters\LAT_China1km.tif',
@@ -249,7 +321,7 @@ def RFEstimate(X,
         # Block split
         # clay>-1        0<cgrass<100      NDVI>=0              prcp>-9999               fpar>0
         xid = dataDf[(dataDf.iloc[:, 2] > -1) & (dataDf.iloc[:, 3] > -9999) & (dataDf.iloc[:, 8] >= 0) &
-                     (dataDf.iloc[:, 12] > -9999) & (dataDf.iloc[:, 18] >= 0)].index.tolist()
+                     (dataDf.iloc[:, 10] > -9999) & (dataDf.iloc[:, 12] >= 0)].index.tolist()
         indf = dataDf.iloc[xid, :]
         indf.columns = X_columns#[X_columns[0]] + X_columns[2:]
         # indf = indf.reindex(columns=X_columns, fill_value=yr)
@@ -266,7 +338,7 @@ def RFEstimate(X,
         outdat[xid] = outResults_
         outdat = outdat.reshape(4088,4998)
 
-        EsRaster.write_img(r"G:\1_BeiJingUP\AUGB\Data\20220629\Results\RF_AGB_5\全区域"+os.sep+r'RF_AGB_'+str(yr)+r'.tif', im_proj, im_geotrans, outdat)
+        EsRaster.write_img(r"G:\1_BeiJingUP\AUGB\Data\20220629\Results\RF_AGB_2024\全区域"+os.sep+r'RF_AGB_'+str(yr)+r'.tif', im_proj, im_geotrans, outdat)
         del outResults_,dataDf,indf
         tm.sleep(3)
     print()

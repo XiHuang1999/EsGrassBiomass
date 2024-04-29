@@ -80,6 +80,7 @@ for cc in dynamicParasD:
 # bb.to_excel(r'G:\1_BeiJingUP\AUGB\RatioAB\Data_S1\Data_S1\Sample_Select_NPP.xlsx')
 
 '''数据验证'''
+picOut = r'G:\1_BeiJingUP\AUGB\Data\20220629\Results\PIC'
 excel = pd.read_excel(r"G:\1_BeiJingUP\AUGB\RatioAB\Data_S1\Data_S1\自己选-第二次试验\BMA_Sample.xlsx")
 siteTNPP = excel.loc[:,'TNPP(gDMm-2)']*0.45
 bmaTNPP = excel.loc[:,'BMA(gDMm-2)']*0.45
@@ -90,16 +91,16 @@ linreg = st.linregress(pd.Series(siteTNPP, dtype=np.float64), pd.Series(bmaTNPP,
 pltx = [x for x in np.linspace(start=0, stop=max(siteTNPP), num=1000)]
 plty = [linreg.slope * x + linreg.intercept for x in pltx]
 
-f, ax = plt.subplots(figsize=(6, 6))
+f, ax = plt.subplots(figsize=(14/3/2.54+2, 14/3/2.54+2))
 plt.plot(pltx, plty, '-', color='red', alpha=0.8, linewidth=2, label='Fitting Line')    # color='#4169E1'
 plt.plot(pltx, pltx, '-', color='black', alpha=0.8, linewidth=2, label='1:1')
 plt.scatter(siteTNPP, bmaTNPP,s=9,cmap='Spectral') #,c=z
-plt.text(400,235,r'y = '+str('%.2f' % linreg.slope)+r'*x + '+str('%.2f' % linreg.intercept)+
+plt.text(100,500,r'y = '+str('%.2f' % linreg.slope)+r'*x + '+str('%.2f' % linreg.intercept)+
          '\n'+r'R Square = '+str('%.2f' % (linreg.rvalue**2))+
          '\n'+r'P Value = '+str('%.2f' % linreg.pvalue)
-         ,fontsize=8,color = "r",fontweight='bold')
+         ,fontsize=12,color = "r",fontweight='bold')
 plt.subplots_adjust(left=.1, right=0.95, bottom=0.22, top=0.95)
-plt.xlabel('Site Value')  # 添加x轴和y轴标签
-plt.ylabel('BMA Value')
-plt.savefig(out + os.sep + 'BMAandSiteTNPP_Reg_results.png',dpi=500,bbox_inches='tight')#, transparent=True
+plt.xlabel('Field based ANPP value')  # 添加x轴和y轴标签
+plt.ylabel('BMA based ANPP value')
+plt.savefig(picOut + os.sep + 'BMAandSiteTNPP_Reg_results.pdf',dpi=600,bbox_inches='tight')#, transparent=True
 plt.show()

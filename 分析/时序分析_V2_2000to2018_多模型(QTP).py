@@ -99,7 +99,7 @@ dataStc1 = dataStc.copy()
 # dataStc[keyName.index('GLOPEM-CEVSA')] = [value/0.45 for value in dataStc[keyName.index('GLOPEM-CEVSA')]]
 
 # Normal Units
-for i in [0,2,3]:
+for i in [0,1,2,3]:
     dataStc[i] = [numb/0.45 for numb in dataStc[i]]
 # Calc SE and Mean
 se = [np.std(data,ddof=0)/math.sqrt(len(data)) for data in zip(dataStc[0],dataStc[1],dataStc[2],dataStc[3])]
